@@ -99,29 +99,29 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
       </div>
 
       {/* Hero Title */}
-      <h1 className="text-3xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.15] mb-4">
+      <h1 className="text-3xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15] mb-4">
         Convert AI Chats to <br className="hidden sm:inline" />
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
           Publication-Ready PDF
         </span> Notes
       </h1>
 
-      <p className="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto mb-7 leading-relaxed">
-        Paste any conversation link or chat transcript from <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">ChatGPT</span>,{' '}
-        <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">Google Gemini</span>, or{' '}
-        <span className="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">Claude</span> to generate synthesis notes, flashcards, & executive matrices.
+      <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mb-7 leading-relaxed">
+        Paste any conversation link or chat transcript from <span className="font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">ChatGPT</span>,{' '}
+        <span className="font-semibold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md">Google Gemini</span>, or{' '}
+        <span className="font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md">Claude</span> to generate synthesis notes, flashcards, & executive matrices.
       </p>
 
       {/* Provider Selector Pills */}
       <div className="flex items-center justify-center gap-2 mb-5">
-        <span className="text-xs text-slate-400 font-medium mr-1">Select AI:</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium mr-1">Select AI:</span>
         <button
           type="button"
           onClick={() => setSelectedProvider('chatgpt')}
           className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
             selectedProvider === 'chatgpt'
-              ? 'bg-emerald-50 text-emerald-900 border-emerald-400 ring-2 ring-emerald-500/25 shadow-sm'
-              : 'bg-white/80 backdrop-blur-xs text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-white'
+              ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-900 dark:text-emerald-300 border-emerald-400 ring-2 ring-emerald-500/25 shadow-sm'
+              : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-850'
           }`}
         >
           <span>🤖</span>
@@ -132,8 +132,8 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
           onClick={() => setSelectedProvider('gemini')}
           className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
             selectedProvider === 'gemini'
-              ? 'bg-blue-50 text-blue-900 border-blue-400 ring-2 ring-blue-500/25 shadow-sm'
-              : 'bg-white/80 backdrop-blur-xs text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-white'
+              ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-900 dark:text-blue-300 border-blue-400 ring-2 ring-blue-500/25 shadow-sm'
+              : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-850'
           }`}
         >
           <span>♊</span>
@@ -144,8 +144,8 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
           onClick={() => setSelectedProvider('claude')}
           className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
             selectedProvider === 'claude'
-              ? 'bg-amber-50 text-amber-900 border-amber-400 ring-2 ring-amber-500/25 shadow-sm'
-              : 'bg-white/80 backdrop-blur-xs text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-white'
+              ? 'bg-amber-50 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border-amber-400 ring-2 ring-amber-500/25 shadow-sm'
+              : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-850'
           }`}
         >
           <span>🧠</span>
@@ -157,8 +157,8 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto mb-5">
         <div className="group relative">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-xs opacity-30 group-focus-within:opacity-80 transition duration-500"></div>
-          <div className="relative flex items-center bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl shadow-indigo-950/5 border border-slate-200/90 group-focus-within:border-transparent transition-all p-2">
-            <div className="pl-3 pr-2 text-indigo-500">
+          <div className="relative flex items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-xl shadow-indigo-950/5 border border-slate-200/90 dark:border-slate-800 group-focus-within:border-transparent transition-all p-2">
+            <div className="pl-3 pr-2 text-indigo-500 dark:text-indigo-400">
               <Link2 className="w-5 h-5" />
             </div>
             <input
@@ -166,7 +166,7 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Paste ChatGPT, Claude, or Gemini share link..."
-              className="w-full text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-hidden pr-2 font-medium"
+              className="w-full text-sm sm:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent outline-hidden pr-2 font-medium"
               disabled={isLoading}
             />
             <button

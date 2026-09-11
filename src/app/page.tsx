@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { InputHero } from '@/components/InputHero';
 import { StudioControls } from '@/components/StudioControls';
@@ -18,6 +18,37 @@ export default function Home() {
   const [conversation, setConversation] = useState<ConversationData>(DEMO_CONVERSATIONS[0]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Initialize dark mode from system preference or localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chatpdf_theme');
+      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        setIsDarkMode(true);
+        document.documentElement.classList.add('dark');
+      } else {
+        setIsDarkMode(false);
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        if (next) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('chatpdf_theme', 'dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('chatpdf_theme', 'light');
+        }
+      }
+      return next;
+    });
+  };
 
   const [options, setOptions] = useState<CustomizationOptions>({
     theme: 'academic',
@@ -69,12 +100,14 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50/70 selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen flex flex-col bg-slate-50/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 selection:bg-indigo-100 selection:text-indigo-900">
       <Navbar
         onSelectDemo={handleSelectDemo}
         onOpenPasteModal={() => setIsPasteModalOpen(true)}
         hasDocument={!!generatedNotes}
         onPrint={printDocument}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={toggleDarkMode}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
@@ -95,11 +128,13 @@ export default function Home() {
               onModeChange={handleModeChange}
             />
 
-            {/* Document Rendered Canvas */}
-            <DocumentRenderer
-              notes={generatedNotes}
-              options={options}
-            />
+            {/* Document Rendered Canvas with Floating Intro Animation on load/switch */}
+            <div key={`${conversation.id}-${options.mode}-${options.theme}`} className="w-full">
+              <DocumentRenderer
+                notes={generatedNotes}
+                options={options}
+              />
+            </div>
           </section>
 
           {/* Customizer Sidebar (order-2 on mobile, sticky left on desktop) */}

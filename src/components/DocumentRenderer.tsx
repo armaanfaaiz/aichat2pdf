@@ -150,7 +150,7 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
   return (
     <div
       id="printable-document"
-      className={`w-full max-w-[860px] mx-auto p-6 sm:p-12 transition-all shadow-xl rounded-2xl border border-slate-200/80 ${getThemeClass(
+      className={`animate-note-open w-full max-w-[860px] mx-auto p-6 sm:p-12 transition-all duration-300 shadow-xl rounded-2xl border border-slate-200/80 ${getThemeClass(
         theme
       )}`}
     >

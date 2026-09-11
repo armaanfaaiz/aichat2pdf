@@ -51,12 +51,12 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
   const currentModeObj = modes.find((m) => m.id === options.mode) || modes[0];
 
   return (
-    <div className="no-print bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all">
+    <div className="no-print bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all text-slate-800 dark:text-slate-200">
       {/* Mobile Accordion Toggle Header (Visible on mobile screens) */}
       <button
         type="button"
         onClick={() => setIsMobileExpanded(!isMobileExpanded)}
-        className="w-full lg:hidden flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 transition text-left"
+        className="w-full lg:hidden flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100/80 dark:hover:bg-slate-800 transition text-left"
       >
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
