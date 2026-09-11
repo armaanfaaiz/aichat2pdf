@@ -1,7 +1,5 @@
-'use client';
-
 import React from 'react';
-import { FileText, Sparkles, BookOpen, ClipboardPaste, Download, Sun, Moon } from 'lucide-react';
+import { FileText, Sparkles, BookOpen, ClipboardPaste, Download } from 'lucide-react';
 import { DEMO_CONVERSATIONS } from '@/lib/demo-data';
 import { ConversationData } from '@/types';
 
@@ -10,8 +8,6 @@ interface NavbarProps {
   onOpenPasteModal: () => void;
   hasDocument: boolean;
   onPrint: () => void;
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
 }
 
 export function Navbar({
@@ -19,11 +15,9 @@ export function Navbar({
   onOpenPasteModal,
   hasDocument,
   onPrint,
-  isDarkMode,
-  onToggleDarkMode,
 }: NavbarProps) {
   return (
-    <nav className="no-print sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl transition-all shadow-xs">
+    <nav className="no-print sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-xl transition-all shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3">
@@ -35,15 +29,15 @@ export function Navbar({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-slate-900 dark:text-white text-lg tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-800 dark:from-white dark:via-slate-200 dark:to-indigo-300 bg-clip-text">
-                ChatPDF<span className="text-indigo-600 dark:text-indigo-400">.ai</span>
+              <span className="font-extrabold text-slate-900 text-lg tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-800 bg-clip-text">
+                ChatPDF<span className="text-indigo-600">.ai</span>
               </span>
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/60 dark:to-purple-950/60 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-200/60 dark:border-indigo-800/60 shadow-2xs">
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200/60 shadow-2xs">
                 <Sparkles className="w-3 h-3 text-indigo-500 animate-pulse" />
                 Universal Studio
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block">AI Conversations &rarr; Executive Notes & PDF Guides</p>
+            <p className="text-[11px] text-slate-500 font-medium hidden sm:block">AI Conversations &rarr; Executive Notes & PDF Guides</p>
           </div>
         </div>
 
@@ -87,21 +81,6 @@ export function Navbar({
           >
             <ClipboardPaste className="w-4 h-4 text-slate-500" />
             <span className="hidden sm:inline">Paste Text / File</span>
-          </button>
-
-          {/* Dark / Light Mode Toggler */}
-          <button
-            type="button"
-            onClick={onToggleDarkMode}
-            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-600 dark:text-amber-400 transition-all shadow-2xs active:scale-95"
-            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            aria-label="Toggle dark/light mode"
-          >
-            {isDarkMode ? (
-              <Sun className="w-4 h-4 text-amber-400 animate-spin-slow" />
-            ) : (
-              <Moon className="w-4 h-4 text-indigo-600" />
-            )}
           </button>
 
           {/* Quick Print Button if doc loaded */}
