@@ -91,6 +91,9 @@ export const metadata: Metadata = {
     },
   },
   category: 'productivity',
+  verification: {
+    google: 'google852b862769123100',
+  },
 };
 
 // JSON-LD Structured Data (Schema.org)
