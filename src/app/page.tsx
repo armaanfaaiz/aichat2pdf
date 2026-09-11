@@ -41,14 +41,27 @@ export default function Home() {
     return generateStructuredNotes(conversation);
   }, [conversation]);
 
+  const scrollToPreview = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setTimeout(() => {
+        const el = document.getElementById('studio-preview');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  };
+
   const handleSelectDemo = (demo: ConversationData) => {
     setConversation(demo);
-    setOptions((prev) => ({ ...prev, customTitle: '' }));
+    setOptions((prev) => ({ ...prev, customTitle: '', provider: demo.provider || 'universal' }));
+    scrollToPreview();
   };
 
   const handleLoadConversation = (newConv: ConversationData) => {
     setConversation(newConv);
-    setOptions((prev) => ({ ...prev, customTitle: '' }));
+    setOptions((prev) => ({ ...prev, customTitle: '', provider: newConv.provider || 'universal' }));
+    scrollToPreview();
   };
 
   const handleModeChange = (mode: NoteMode) => {
@@ -64,7 +77,7 @@ export default function Home() {
         onPrint={printDocument}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
         <InputHero
           onLoadConversation={handleLoadConversation}
           onOpenPasteModal={() => setIsPasteModalOpen(true)}
@@ -72,18 +85,10 @@ export default function Home() {
           setIsLoading={setIsLoading}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Customizer Sidebar */}
-          <aside className="lg:col-span-4 lg:sticky lg:top-20 space-y-4">
-            <StudioControls
-              options={options}
-              setOptions={setOptions}
-              defaultTitle={conversation.title}
-            />
-          </aside>
-
-          {/* Right Live Document Preview Area */}
-          <section className="lg:col-span-8 flex flex-col items-center">
+        {/* Studio Workspace: Mobile-optimized ordering */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          {/* Document Preview Area (order-1 on mobile so Android users see it first without scrolling!) */}
+          <section id="studio-preview" className="lg:col-span-8 flex flex-col items-center order-1 lg:order-2 w-full">
             {/* View Switcher Bar (Instant on-the-spot mode switch) */}
             <ViewSwitcher
               activeMode={options.mode}
@@ -96,6 +101,15 @@ export default function Home() {
               options={options}
             />
           </section>
+
+          {/* Customizer Sidebar (order-2 on mobile, sticky left on desktop) */}
+          <aside className="lg:col-span-4 lg:sticky lg:top-20 space-y-4 order-2 lg:order-1 w-full">
+            <StudioControls
+              options={options}
+              setOptions={setOptions}
+              defaultTitle={conversation.title}
+            />
+          </aside>
         </div>
 
         {/* SEO Information & FAQ Section (Crawled by search engines, hidden from PDF print) */}
