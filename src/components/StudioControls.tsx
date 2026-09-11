@@ -51,12 +51,12 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
   const currentModeObj = modes.find((m) => m.id === options.mode) || modes[0];
 
   return (
-    <div className="no-print bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all text-slate-800 dark:text-slate-200">
+    <div className="no-print bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden transition-all text-slate-900">
       {/* Mobile Accordion Toggle Header (Visible on mobile screens) */}
       <button
         type="button"
         onClick={() => setIsMobileExpanded(!isMobileExpanded)}
-        className="w-full lg:hidden flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100/80 dark:hover:bg-slate-800 transition text-left"
+        className="w-full lg:hidden flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition text-left"
       >
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -65,7 +65,7 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Customize Document</span>
-              <span className="text-[10px] bg-indigo-100 text-indigo-800 font-semibold px-2 py-0.5 rounded-full">
+              <span className="text-[10px] bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-full border border-indigo-100">
                 {currentThemeObj.icon} {currentThemeObj.name}
               </span>
             </div>
@@ -87,7 +87,7 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
       <div className={`p-5 space-y-6 ${isMobileExpanded ? 'block' : 'hidden lg:block'}`}>
         {/* Note Mode Selector */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-2">Note Structure / Style</label>
+          <label className="block text-xs font-bold text-slate-800 mb-2">Note Structure / Style</label>
           <div className="grid grid-cols-2 gap-2">
             {modes.map((m) => {
               const Icon = m.icon;
@@ -99,13 +99,13 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
                   onClick={() => updateOption('mode', m.id)}
                   className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all ${
                     isSelected
-                      ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-500/20 text-indigo-950'
-                      : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 text-slate-700'
+                      ? 'border-indigo-600 bg-indigo-50/80 ring-2 ring-indigo-500/20 text-indigo-950 shadow-xs'
+                      : 'border-slate-200 hover:border-slate-300 bg-slate-50/70 hover:bg-slate-50 text-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 mb-1 font-semibold text-xs">
+                  <div className="flex items-center gap-1.5 mb-1 font-bold text-xs">
                     <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-indigo-600' : 'text-slate-500'}`} />
-                    <span>{m.name}</span>
+                    <span className={isSelected ? 'text-indigo-950' : 'text-slate-800'}>{m.name}</span>
                   </div>
                   <span className="text-[10px] text-slate-500 line-clamp-1">{m.desc}</span>
                 </button>
@@ -116,7 +116,7 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
 
         {/* Theme Selector */}
         <div>
-          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2.5">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-2.5">
             <div className="flex items-center gap-1.5">
               <Palette className="w-3.5 h-3.5 text-indigo-600" />
               <span>Visual Theme (8 Styles)</span>
@@ -133,14 +133,14 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
                   onClick={() => updateOption('theme', t.id)}
                   className={`p-2.5 rounded-xl border text-left transition-all duration-200 transform active:scale-95 ${
                     isSelected
-                      ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-500/30 text-indigo-950 shadow-xs'
-                      : 'border-slate-200/80 hover:border-slate-300 bg-white/60 hover:bg-white text-slate-700'
+                      ? 'border-indigo-600 bg-indigo-50/80 ring-2 ring-indigo-500/30 text-indigo-950 shadow-xs'
+                      : 'border-slate-200 hover:border-slate-300 bg-slate-50/60 hover:bg-white text-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5 text-xs font-bold">
                       <span className="text-sm">{t.icon}</span>
-                      <span className="truncate">{t.name}</span>
+                      <span className={`truncate ${isSelected ? 'text-indigo-950' : 'text-slate-800'}`}>{t.name}</span>
                     </div>
                   </div>
                   <span className="text-[10px] text-slate-500 line-clamp-1 block">{t.desc}</span>
