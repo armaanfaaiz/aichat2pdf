@@ -27,6 +27,7 @@ export function PasteModal({ isOpen, onClose, onLoadConversation }: PasteModalPr
     }
 
     try {
+      setError(null);
       if (text.trim().startsWith('{') && text.trim().endsWith('}')) {
         try {
           const parsedJson = JSON.parse(text);
@@ -44,10 +45,16 @@ export function PasteModal({ isOpen, onClose, onLoadConversation }: PasteModalPr
         title.trim() || undefined,
         provider !== 'universal' ? provider : undefined
       );
+
+      if (!conv || conv.messages.length === 0) {
+        setError('Could not extract any content from the text. Please check the content and try again.');
+        return;
+      }
+
       onLoadConversation(conv);
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to parse pasted text.');
+      setError(err.message || 'Failed to parse pasted text. Please verify the content format.');
     }
   };
 
@@ -55,6 +62,7 @@ export function PasteModal({ isOpen, onClose, onLoadConversation }: PasteModalPr
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setError(null);
     const reader = new FileReader();
     reader.onload = (event) => {
       const content = event.target?.result as string;
@@ -65,7 +73,10 @@ export function PasteModal({ isOpen, onClose, onLoadConversation }: PasteModalPr
         }
       }
     };
-    reader.readAsText(file);
+    reader.onerror = () => {
+      setError('Failed to read the uploaded file.');
+    };
+    reader.readAsText(file, 'UTF-8');
   };
 
   return (
@@ -145,18 +156,33 @@ export function PasteModal({ isOpen, onClose, onLoadConversation }: PasteModalPr
           {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
           {/* Footer Controls */}
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-            <div>
-              <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-indigo-600 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition">
                 <Upload className="w-3.5 h-3.5" />
-                <span>Upload .txt / .json</span>
+                <span>Upload File</span>
                 <input
                   type="file"
-                  accept=".txt,.json,.md"
+                  accept=".txt,.json,.md,.markdown,.html,.log"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
               </label>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const clip = await navigator.clipboard.readText();
+                    if (clip) setText(clip);
+                  } catch {
+                    // Ignore clipboard error
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-2 rounded-xl transition"
+              >
+                <span>📋 Paste from Clipboard</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-2">

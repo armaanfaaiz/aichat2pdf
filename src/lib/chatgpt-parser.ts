@@ -144,39 +144,44 @@ export function extractFromChatGPTData(data: any, canonicalUrl?: string): Conver
 }
 
 /**
- * Normalizes raw chat text from ChatGPT, Claude, or Google Gemini into structured messages
+ * Normalizes raw chat text, markdown files, notes, or dialogue transcripts
+ * from ChatGPT, Claude, Google Gemini, or pasted documents into structured conversation messages
  */
 export function parseRawPastedChat(text: string, titleHint?: string, explicitProvider?: AIProvider): ConversationData {
   const provider = explicitProvider || detectAIProvider(text);
-  const lines = text.split('\n');
+  const trimmedText = text.trim();
+  const lines = trimmedText.split('\n');
   const messages: ChatMessage[] = [];
-  
+
+  // 1. Patterns for User prompts across ChatGPT, Claude, Gemini, or standard Q&A
+  const userPatterns = [
+    /^(You|User|Human|Prompt|Me|Question|Speaker 1|Interviewer)(\s+said)?\s*:/i,
+    /^###?\s*(You|User|Human|Prompt|Question|Query)/i,
+    /^\*\*(You|User|Human|Prompt|Question|Query):\*\*/i,
+    /^👤\s*(You|User|Human):/i,
+    /^Q\s*[:\.]\s*/i,
+    /^(Question|Query)\s*\d*\s*[:\.]\s*/i,
+  ];
+
+  // 2. Patterns for AI responses across ChatGPT, Claude, Gemini, or standard answers
+  const assistantPatterns = [
+    /^(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Anthropic|Sonnet|Opus|Haiku|Answer|Speaker 2)(\s+said)?\s*:/i,
+    /^###?\s*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Sonnet|Opus|Answer)/i,
+    /^\*\*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Sonnet|Opus|Answer):\*\*/i,
+    /^(🤖|♊|🧠)\s*(ChatGPT|Claude|Gemini|Assistant):/i,
+    /^A\s*[:\.]\s*/i,
+    /^(Answer|Response)\s*\d*\s*[:\.]\s*/i,
+  ];
+
   let currentRole: 'user' | 'assistant' = 'user';
   let currentContent: string[] = [];
   let msgCounter = 1;
-
-  // Patterns for User prompts across ChatGPT, Claude, and Gemini
-  const userPatterns = [
-    /^(You|User|Human|Prompt|Me|Question|Speaker 1)(\s+said)?\s*:/i,
-    /^###\s*(You|User|Human|Prompt|Question)/i,
-    /^\*\*(You|User|Human|Prompt|Question):\*\*/i,
-    /^👤\s*(You|User|Human):/i,
-    /^Q\s*:\s*/i,
-  ];
-
-  // Patterns for AI responses across ChatGPT, Claude, and Gemini
-  const assistantPatterns = [
-    /^(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Anthropic|Sonnet|Opus|Haiku|Answer)(\s+said)?\s*:/i,
-    /^###\s*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Sonnet|Opus)/i,
-    /^\*\*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Sonnet|Opus):\*\*/i,
-    /^(🤖|♊|🧠)\s*(ChatGPT|Claude|Gemini|Assistant):/i,
-    /^A\s*:\s*/i,
-  ];
+  let hasDetectedRoles = false;
 
   const flushMessage = () => {
     if (currentContent.length > 0) {
-      const rawText = currentContent.join('\n').trim();
-      const cleaned = sanitizeChatGPTText(rawText);
+      const raw = currentContent.join('\n').trim();
+      const cleaned = sanitizeChatGPTText(raw);
       if (cleaned) {
         messages.push({
           id: `msg-${msgCounter++}`,
@@ -195,21 +200,25 @@ export function parseRawPastedChat(text: string, titleHint?: string, explicitPro
 
     if (isUserHeader) {
       flushMessage();
+      hasDetectedRoles = true;
       currentRole = 'user';
       const cleaned = line
-        .replace(/^(👤\s*)?(You|User|Human|Prompt):\s*/i, '')
-        .replace(/^###\s*(You|User|Human|Prompt)\s*/i, '')
-        .replace(/^\*\*(You|User|Human|Prompt):\*\*\s*/i, '');
+        .replace(/^(👤\s*)?(You|User|Human|Prompt|Me|Question|Query|Speaker 1)(\s+said)?\s*:\s*/i, '')
+        .replace(/^###?\s*(You|User|Human|Prompt|Question|Query)\s*/i, '')
+        .replace(/^\*\*(You|User|Human|Prompt|Question|Query):\*\*\s*/i, '')
+        .replace(/^(Q|Question|Query)\s*\d*\s*[:\.]\s*/i, '');
       if (cleaned.trim()) {
         currentContent.push(cleaned);
       }
     } else if (isAssistantHeader) {
       flushMessage();
+      hasDetectedRoles = true;
       currentRole = 'assistant';
       const cleaned = line
-        .replace(/^(🤖|♊|🧠\s*)?(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Anthropic):\s*/i, '')
-        .replace(/^###\s*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini)\s*/i, '')
-        .replace(/^\*\*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini):\*\*\s*/i, '');
+        .replace(/^(🤖|♊|🧠\s*)?(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Anthropic|Sonnet|Opus|Haiku|Answer|Speaker 2)(\s+said)?\s*:\s*/i, '')
+        .replace(/^###?\s*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Sonnet|Opus|Answer)\s*/i, '')
+        .replace(/^\*\*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Sonnet|Opus|Answer):\*\*\s*/i, '')
+        .replace(/^(A|Answer|Response)\s*\d*\s*[:\.]\s*/i, '');
       if (cleaned.trim()) {
         currentContent.push(cleaned);
       }
@@ -220,27 +229,78 @@ export function parseRawPastedChat(text: string, titleHint?: string, explicitPro
 
   flushMessage();
 
-  if (messages.length === 0 && text.trim()) {
-    const cleaned = sanitizeChatGPTText(text.trim());
-    messages.push({
-      id: 'msg-1',
-      role: 'assistant',
-      content: cleaned,
-      codeBlocks: extractCodeBlocks(cleaned),
-    });
+  // If no explicit dialogue turn markers were matched (e.g. pasted article, essay, or single AI reply)
+  if (!hasDetectedRoles || messages.length <= 1) {
+    // Check if the pasted text has markdown section headers like "# " or "## "
+    const headingSections = trimmedText.split(/\n(?=#{1,3}\s+)/g).filter((s) => s.trim().length > 0);
+
+    if (headingSections.length > 1) {
+      messages.length = 0;
+      msgCounter = 1;
+      // First section might be the intro / user question
+      for (let i = 0; i < headingSections.length; i++) {
+        const sec = headingSections[i].trim();
+        const firstLine = sec.split('\n')[0].replace(/^#{1,4}\s*/, '').trim();
+        const body = sec.split('\n').slice(1).join('\n').trim();
+
+        if (i === 0 && !body) {
+          // It's just a top-level document title
+          continue;
+        }
+
+        messages.push({
+          id: `msg-${msgCounter++}`,
+          role: 'user',
+          content: firstLine || `Topic Section ${i + 1}`,
+          codeBlocks: [],
+        });
+
+        messages.push({
+          id: `msg-${msgCounter++}`,
+          role: 'assistant',
+          content: sanitizeChatGPTText(body || sec),
+          codeBlocks: extractCodeBlocks(body || sec),
+        });
+      }
+    } else if (messages.length === 0 && trimmedText) {
+      const cleaned = sanitizeChatGPTText(trimmedText);
+      // Create a user prompt and assistant response pair so note synthesis works cleanly
+      const firstLine = cleaned.split('\n')[0].replace(/^[#*`_\s]+/, '').trim();
+      const rest = cleaned.split('\n').slice(1).join('\n').trim();
+
+      messages.push({
+        id: 'msg-1',
+        role: 'user',
+        content: titleHint || (firstLine.length > 5 ? firstLine : 'Overview and Key Points'),
+        codeBlocks: [],
+      });
+      messages.push({
+        id: 'msg-2',
+        role: 'assistant',
+        content: rest || cleaned,
+        codeBlocks: extractCodeBlocks(rest || cleaned),
+      });
+    }
   }
 
-  let derivedTitle = titleHint || `${provider.toUpperCase()} Conversation Notes`;
-  if (messages.length > 0 && messages[0].role === 'user') {
-    const firstLine = messages[0].content.split('\n')[0].replace(/[#*`_]/g, '').trim();
-    if (firstLine.length > 5) {
-      derivedTitle = firstLine.length > 65 ? firstLine.substring(0, 62) + '...' : firstLine;
+  // Determine Title
+  let derivedTitle = titleHint || '';
+  if (!derivedTitle) {
+    if (messages.length > 0) {
+      const firstMsgContent = messages[0].content;
+      const firstLine = firstMsgContent.split('\n')[0].replace(/^[#*`_\s]+/, '').trim();
+      if (firstLine.length > 3) {
+        derivedTitle = firstLine.length > 70 ? firstLine.substring(0, 67) + '...' : firstLine;
+      }
     }
+  }
+  if (!derivedTitle) {
+    derivedTitle = `${provider.toUpperCase()} Document Notes`;
   }
 
   return {
     id: `conv-${Date.now()}`,
-    title: derivedTitle,
+    title: sanitizeChatGPTText(derivedTitle),
     provider,
     createdAt: new Date().toISOString(),
     messages,
