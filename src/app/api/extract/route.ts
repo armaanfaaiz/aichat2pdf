@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ConversationData } from '@/types';
-import { decodeTurboStream, extractFromChatGPTData } from '@/lib/chatgpt-parser';
+import { ConversationData, ChatMessage } from '@/types';
+import { decodeTurboStream, extractFromChatGPTData, extractCodeBlocks, parseRawPastedChat } from '@/lib/chatgpt-parser';
+import { sanitizeChatGPTText, detectAIProvider } from '@/lib/sanitize';
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,21 +9,20 @@ export async function POST(req: NextRequest) {
     const { url } = body;
 
     if (!url || typeof url !== 'string') {
-      return NextResponse.json({ error: 'Please provide a valid ChatGPT share URL' }, { status: 400 });
+      return NextResponse.json({ error: 'Please provide a valid conversation link or text' }, { status: 400 });
     }
 
     const trimmed = url.trim();
-    const shareMatch = trimmed.match(/(?:https?:\/\/)?(?:chatgpt\.com|chat\.openai\.com)\/share\/([a-zA-Z0-9\-_]+)/i);
 
-    if (!shareMatch) {
-      return NextResponse.json(
-        { error: 'Invalid URL format. Please provide a link in the form: https://chatgpt.com/share/<id>' },
-        { status: 400 }
-      );
+    // Check if user pasted chat text directly instead of a link
+    if (
+      !trimmed.startsWith('http://') &&
+      !trimmed.startsWith('https://') &&
+      (trimmed.length > 50 || trimmed.includes('\n'))
+    ) {
+      const parsed = parseRawPastedChat(trimmed);
+      return NextResponse.json(parsed);
     }
-
-    const shareId = shareMatch[1];
-    const canonicalUrl = `https://chatgpt.com/share/${shareId}`;
 
     // Common realistic browser headers
     const browserHeaders = {
@@ -37,13 +37,114 @@ export async function POST(req: NextRequest) {
       'Upgrade-Insecure-Requests': '1',
     };
 
-    // 1. Fetch share HTML page
+    // =========================================================================
+    // CASE A: ANTHROPIC CLAUDE (claude.ai/share/<id>)
+    // =========================================================================
+    const claudeMatch = trimmed.match(/(?:https?:\/\/)?claude\.ai\/share\/([a-zA-Z0-9\-_]+)/i);
+    if (claudeMatch) {
+      const shareId = claudeMatch[1];
+      const canonicalUrl = `https://claude.ai/share/${shareId}`;
+
+      // 1. Try public share API
+      try {
+        const apiRes = await fetch(`https://claude.ai/api/share/${shareId}`, {
+          headers: {
+            ...browserHeaders,
+            Accept: 'application/json',
+          },
+        });
+        if (apiRes.ok) {
+          const data = await apiRes.json();
+          const conv = extractFromClaudeData(data, canonicalUrl);
+          if (conv && conv.messages.length > 0) {
+            return NextResponse.json(conv);
+          }
+        }
+      } catch {
+        // proceed
+      }
+
+      // 2. Try HTML page
+      try {
+        const htmlRes = await fetch(canonicalUrl, { headers: browserHeaders });
+        if (htmlRes.ok) {
+          const html = await htmlRes.text();
+          const conv = extractFromClaudeHtml(html, canonicalUrl);
+          if (conv && conv.messages.length > 0) {
+            return NextResponse.json(conv);
+          }
+        }
+      } catch {
+        // proceed
+      }
+
+      // If Claude's bot protection blocks server fetch, explain clearly
+      return NextResponse.json(
+        {
+          error:
+            'Claude public share links are protected by Anthropic Cloudflare verification. Please copy your Claude conversation and click "1-Click Paste From Clipboard" to format your notes instantly!',
+          suggestPaste: true,
+          provider: 'claude',
+        },
+        { status: 422 }
+      );
+    }
+
+    // =========================================================================
+    // CASE B: GOOGLE GEMINI (gemini.google.com/share/<id>)
+    // =========================================================================
+    const geminiMatch = trimmed.match(/(?:https?:\/\/)?(?:gemini|bard)\.google\.com\/share\/([a-zA-Z0-9\-_]+)/i);
+    if (geminiMatch) {
+      const shareId = geminiMatch[1];
+      const canonicalUrl = `https://gemini.google.com/share/${shareId}`;
+
+      try {
+        const htmlRes = await fetch(canonicalUrl, { headers: browserHeaders });
+        if (htmlRes.ok) {
+          const html = await htmlRes.text();
+          const conv = extractFromGeminiHtml(html, canonicalUrl);
+          if (conv && conv.messages.length > 0) {
+            return NextResponse.json(conv);
+          }
+        }
+      } catch {
+        // proceed
+      }
+
+      return NextResponse.json(
+        {
+          error:
+            'Gemini share links require Google account verification. Please copy your Gemini chat text and click "1-Click Paste From Clipboard" to generate your notes instantly!',
+          suggestPaste: true,
+          provider: 'gemini',
+        },
+        { status: 422 }
+      );
+    }
+
+    // =========================================================================
+    // CASE C: OPENAI CHATGPT (chatgpt.com/share/<id> or chat.openai.com)
+    // =========================================================================
+    const chatGptMatch = trimmed.match(/(?:https?:\/\/)?(?:chatgpt\.com|chat\.openai\.com)\/share\/([a-zA-Z0-9\-_]+)/i);
+    if (!chatGptMatch) {
+      return NextResponse.json(
+        {
+          error:
+            'Invalid link format. Please provide a ChatGPT (chatgpt.com/share/...), Claude (claude.ai/share/...), or Gemini link, or click "1-Click Paste From Clipboard".',
+        },
+        { status: 400 }
+      );
+    }
+
+    const shareId = chatGptMatch[1];
+    const canonicalUrl = `https://chatgpt.com/share/${shareId}`;
+
     const htmlRes = await fetch(canonicalUrl, { headers: browserHeaders });
 
     if (!htmlRes.ok) {
       return NextResponse.json(
         {
-          error: `Could not reach ChatGPT servers (HTTP ${htmlRes.status}). Please check your connection or paste the conversation text directly.`,
+          error: `Could not reach ChatGPT servers (HTTP ${htmlRes.status}). Please check the link or paste the conversation text directly.`,
         },
         { status: 422 }
       );
@@ -51,7 +152,7 @@ export async function POST(req: NextRequest) {
 
     const html = await htmlRes.text();
 
-    // 2. Extract Modern Turbo Stream calls (window.__reactRouterContext.streamController.enqueue)
+    // Turbo Stream extraction
     const enqueueMatches = html.matchAll(/streamController\.enqueue\(([\s\S]*?)\);/g);
     for (const match of enqueueMatches) {
       if (match[1]) {
@@ -62,21 +163,15 @@ export async function POST(req: NextRequest) {
 
           if (Array.isArray(streamArray)) {
             const decoded = decodeTurboStream(streamArray);
-
-            // Check loaderData['routes/share.$shareId.($action)']
             const shareRoute = decoded?.loaderData?.['routes/share.$shareId.($action)'];
             if (shareRoute) {
               const serverResponse = shareRoute.serverResponse;
-
               if (serverResponse) {
-                // Check if ChatGPT returned an error (e.g. invalid or expired share ID)
                 if (serverResponse.type === 'error' || serverResponse.error) {
-                  const errorMsg =
-                    serverResponse.error ||
-                    "This shared conversation could not be loaded. The link may have expired, was deleted, or is set to private.";
+                  const errorMsg = serverResponse.error || "This shared conversation could not be loaded.";
                   return NextResponse.json(
                     {
-                      error: `ChatGPT reports: "${errorMsg}". You can still generate notes by copying the chat text and clicking "Paste from Clipboard"!`,
+                      error: `ChatGPT reports: "${errorMsg}". You can still generate notes by copying the chat and clicking "1-Click Paste From Clipboard"!`,
                       suggestPaste: true,
                     },
                     { status: 404 }
@@ -90,58 +185,18 @@ export async function POST(req: NextRequest) {
               }
             }
 
-            // Fallback: check any serverResponse or data in decoded object
             const conv = extractFromChatGPTData(decoded, canonicalUrl);
             if (conv && conv.messages.length > 0) {
               return NextResponse.json(conv);
             }
           }
-        } catch (e) {
-          // Continue searching other enqueues
+        } catch {
+          // proceed
         }
       }
     }
 
-    // 3. Check for Remix Context (window.__remixContext)
-    const remixMatch = html.match(/window\.__remixContext\s*=\s*(\{[\s\S]*?\});\s*<\/script>/);
-    if (remixMatch && remixMatch[1]) {
-      try {
-        const remixData = JSON.parse(remixMatch[1]);
-        const routeData = remixData?.state?.loaderData;
-        if (routeData) {
-          for (const key of Object.keys(routeData)) {
-            const val = routeData[key];
-            const conv = extractFromChatGPTData(val?.serverResponse || val, canonicalUrl);
-            if (conv && conv.messages.length > 0) {
-              return NextResponse.json(conv);
-            }
-          }
-        }
-      } catch {
-        // proceed
-      }
-    }
-
-    // 4. Check for Next Data script (__NEXT_DATA__)
-    const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-    if (nextDataMatch && nextDataMatch[1]) {
-      try {
-        const nextData = JSON.parse(nextDataMatch[1]);
-        const serverData =
-          nextData?.props?.pageProps?.serverResponse?.data ||
-          nextData?.props?.pageProps?.data;
-        if (serverData) {
-          const conv = extractFromChatGPTData(serverData, canonicalUrl);
-          if (conv && conv.messages.length > 0) {
-            return NextResponse.json(conv);
-          }
-        }
-      } catch {
-        // proceed
-      }
-    }
-
-    // 5. Try Backend API as fallback
+    // Backend API fallback
     try {
       const apiRes = await fetch(`https://chatgpt.com/backend-api/share/${shareId}`, {
         headers: {
@@ -160,11 +215,10 @@ export async function POST(req: NextRequest) {
       // proceed
     }
 
-    // If all extraction attempts fail, suggest quick paste
     return NextResponse.json(
       {
         error:
-          "This conversation could not be loaded directly (it may be expired, private, or blocked by Cloudflare verification). Please click 'Paste from Clipboard' below to format your chat instantly!",
+          "Could not automatically parse the public page scripts. Please copy your chat and click '1-Click Paste From Clipboard' to format your notes instantly!",
         suggestPaste: true,
       },
       { status: 422 }
@@ -172,8 +226,76 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     console.error('Extraction error:', err);
     return NextResponse.json(
-      { error: err.message || 'Failed to extract ChatGPT conversation' },
+      { error: err.message || 'Failed to extract conversation' },
       { status: 500 }
     );
   }
+}
+
+/**
+ * Extracts conversation data from Claude API responses
+ */
+function extractFromClaudeData(data: any, canonicalUrl: string): ConversationData | null {
+  if (!data) return null;
+  const title = data.title || 'Claude Conversation Notes';
+  const rawMessages = data.chat_messages || data.messages || [];
+  const messages: ChatMessage[] = [];
+  let counter = 1;
+
+  for (const m of rawMessages) {
+    const role = m.sender === 'human' || m.role === 'user' ? 'user' : 'assistant';
+    const text = typeof m.text === 'string' ? m.text : m.content || '';
+    if (text.trim()) {
+      const cleaned = sanitizeChatGPTText(text.trim());
+      messages.push({
+        id: m.uuid || `claude-msg-${counter++}`,
+        role,
+        content: cleaned,
+        codeBlocks: extractCodeBlocks(cleaned),
+      });
+    }
+  }
+
+  if (messages.length === 0) return null;
+
+  return {
+    id: data.uuid || `claude-${Date.now()}`,
+    title: sanitizeChatGPTText(title),
+    provider: 'claude',
+    url: canonicalUrl,
+    createdAt: data.created_at || new Date().toISOString(),
+    messages,
+  };
+}
+
+/**
+ * Extracts conversation from Claude share HTML
+ */
+function extractFromClaudeHtml(html: string, canonicalUrl: string): ConversationData | null {
+  // Check for JSON script tags
+  const jsonMatches = html.matchAll(/<script\b[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  for (const match of jsonMatches) {
+    try {
+      const data = JSON.parse(match[1]);
+      const conv = extractFromClaudeData(data, canonicalUrl);
+      if (conv) return conv;
+    } catch {
+      // proceed
+    }
+  }
+
+  // Check for title in OpenGraph
+  const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/i);
+  const title = titleMatch ? titleMatch[1].replace(/\s*\|\s*Claude$/, '').trim() : 'Claude Conversation';
+
+  return null;
+}
+
+/**
+ * Extracts conversation from Gemini share HTML
+ */
+function extractFromGeminiHtml(html: string, canonicalUrl: string): ConversationData | null {
+  const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/i);
+  const title = titleMatch ? titleMatch[1].replace(/\s*\|\s*Google Gemini$/, '').trim() : 'Gemini Conversation';
+  return null;
 }

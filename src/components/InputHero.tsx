@@ -27,10 +27,10 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
     setIsLoading(true);
 
     try {
-      const detected = detectAIProvider(url);
-      
-      // If it's a ChatGPT link, use the extract API
-      if (url.includes('chatgpt.com') || url.includes('chat.openai.com')) {
+      const isHttpUrl = url.trim().startsWith('http://') || url.trim().startsWith('https://');
+
+      if (isHttpUrl) {
+        // Send any AI link (ChatGPT, Claude, Gemini) to /api/extract
         const res = await fetch('/api/extract', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -40,20 +40,20 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data.error || 'Failed to extract ChatGPT conversation');
+          throw new Error(data.error || 'Failed to extract conversation');
         }
 
-        onLoadConversation({ ...data, provider: 'chatgpt' });
+        onLoadConversation(data);
         return;
       }
 
-      // For Gemini or Claude share links, or text in input:
-      // Claude & Gemini share pages or text
+      // If user typed or pasted raw text directly into the input bar
+      const detected = selectedProvider !== 'universal' ? selectedProvider : detectAIProvider(url);
       const parsed = parseRawPastedChat(url.trim(), undefined, detected !== 'universal' ? detected : undefined);
       if (parsed.messages.length > 0) {
         onLoadConversation(parsed);
       } else {
-        throw new Error(`For ${detected.toUpperCase()} links, you can paste the conversation directly using "1-Click Paste From Clipboard" or the Paste dialog.`);
+        throw new Error('Could not parse text. Please paste conversation text or try the 1-Click Clipboard button.');
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred while processing the conversation.');

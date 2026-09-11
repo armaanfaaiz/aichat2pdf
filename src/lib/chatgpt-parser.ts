@@ -157,18 +157,20 @@ export function parseRawPastedChat(text: string, titleHint?: string, explicitPro
 
   // Patterns for User prompts across ChatGPT, Claude, and Gemini
   const userPatterns = [
-    /^(You|User|Human|Prompt):/i,
-    /^###\s*(You|User|Human|Prompt)/i,
-    /^\*\*(You|User|Human|Prompt):\*\*/i,
+    /^(You|User|Human|Prompt|Me|Question|Speaker 1)(\s+said)?\s*:/i,
+    /^###\s*(You|User|Human|Prompt|Question)/i,
+    /^\*\*(You|User|Human|Prompt|Question):\*\*/i,
     /^👤\s*(You|User|Human):/i,
+    /^Q\s*:\s*/i,
   ];
 
   // Patterns for AI responses across ChatGPT, Claude, and Gemini
   const assistantPatterns = [
-    /^(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Anthropic):/i,
-    /^###\s*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini)/i,
-    /^\*\*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini):\*\*/i,
+    /^(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Anthropic|Sonnet|Opus|Haiku|Answer)(\s+said)?\s*:/i,
+    /^###\s*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Sonnet|Opus)/i,
+    /^\*\*(ChatGPT|Claude|Gemini|Assistant|Bot|AI|Google Gemini|Sonnet|Opus):\*\*/i,
     /^(🤖|♊|🧠)\s*(ChatGPT|Claude|Gemini|Assistant):/i,
+    /^A\s*:\s*/i,
   ];
 
   const flushMessage = () => {
