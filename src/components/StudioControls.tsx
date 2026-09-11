@@ -30,10 +30,14 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
   };
 
   const themes: Array<{ id: ThemeStyle; name: string; icon: string; desc: string }> = [
-    { id: 'academic', name: 'Academic Scholar', icon: '🎓', desc: 'Serif headings, ivory accents, formal review style' },
-    { id: 'modern', name: 'Modern Indigo', icon: '🌌', desc: 'Clean SaaS aesthetic, indigo badges & gradients' },
-    { id: 'minimalist', name: 'Minimalist Editorial', icon: '🌿', desc: 'Swiss monochrome, high contrast, clean grid' },
-    { id: 'emerald', name: 'Emerald Notion', icon: '💎', desc: 'Notion-style callouts, forest green highlights' },
+    { id: 'academic', name: 'Academic Scholar', icon: '🎓', desc: 'Serif headings, ivory paper, formal review style' },
+    { id: 'modern', name: 'Modern Indigo', icon: '🌌', desc: 'Clean SaaS aesthetic, crisp indigo highlights' },
+    { id: 'minimalist', name: 'Minimalist Swiss', icon: '🌿', desc: 'Monochrome editorial, high contrast, clean grid' },
+    { id: 'emerald', name: 'Emerald Notion', icon: '💎', desc: 'Notion-style callouts, mint & forest green' },
+    { id: 'midnight', name: 'Midnight Dark', icon: '🌙', desc: 'Deep slate navy, luminescent electric blue' },
+    { id: 'sunset', name: 'Sunset Warmth', icon: '🌅', desc: 'Warm terracotta, peach tints, energizing study feel' },
+    { id: 'cyberpunk', name: 'Cyber Terminal', icon: '⚡', desc: 'Tech hacker vibe, monospace headers, neon amber' },
+    { id: 'lavender', name: 'Lavender Pastel', icon: '🌸', desc: 'Gentle violet tones, calm readable aesthetic' },
   ];
 
   const modes: Array<{ id: NoteMode; name: string; icon: any; desc: string }> = [

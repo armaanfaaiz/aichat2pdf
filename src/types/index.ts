@@ -22,7 +22,15 @@ export interface ConversationData {
   messages: ChatMessage[];
 }
 
-export type ThemeStyle = 'academic' | 'modern' | 'minimalist' | 'emerald';
+export type ThemeStyle =
+  | 'academic'
+  | 'modern'
+  | 'minimalist'
+  | 'emerald'
+  | 'midnight'
+  | 'cyberpunk'
+  | 'sunset'
+  | 'lavender';
 export type NoteMode = 'study' | 'brief' | 'cheatsheet' | 'transcript';
 export type ViewMode = 'study' | 'chat' | 'cheatsheet' | 'brief';
 

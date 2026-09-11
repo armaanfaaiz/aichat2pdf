@@ -200,7 +200,7 @@ body {
   }
 }
 
-/* Theme Typography */
+/* Theme Typography & Color Accents */
 .theme-academic {
   font-family: "Georgia", "Merriweather", "Times New Roman", serif;
 }
@@ -223,3 +223,70 @@ body {
 .theme-emerald {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
+
+.theme-midnight {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.theme-midnight .markdown-body {
+  color: #cbd5e1;
+}
+.theme-midnight .markdown-body h1,
+.theme-midnight .markdown-body h2,
+.theme-midnight .markdown-body h3 {
+  color: #f8fafc;
+}
+.theme-midnight .markdown-body blockquote {
+  background-color: #1e293b;
+  border-left-color: #60a5fa;
+  color: #cbd5e1;
+}
+.theme-midnight .markdown-body code {
+  background-color: #1e293b;
+  color: #93c5fd;
+}
+.theme-midnight .markdown-body table {
+  border-color: #334155;
+}
+.theme-midnight .markdown-body thead {
+  background-color: #1e293b;
+}
+.theme-midnight .markdown-body th {
+  color: #f1f5f9;
+  border-bottom-color: #475569;
+}
+.theme-midnight .markdown-body td {
+  color: #cbd5e1;
+  border-bottom-color: #334155;
+}
+.theme-midnight .markdown-body tbody tr:nth-child(even) {
+  background-color: #0f172a;
+}
+.theme-midnight .markdown-body tbody tr:hover {
+  background-color: #1e293b;
+}
+
+.theme-cyberpunk {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.theme-cyberpunk h1,
+.theme-cyberpunk h2,
+.theme-cyberpunk h3 {
+  letter-spacing: -0.02em;
+}
+
+.theme-sunset {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.theme-sunset .markdown-body blockquote {
+  border-left-color: #f97316;
+  background-color: #fff7ed;
+}
+
+.theme-lavender {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.theme-lavender .markdown-body blockquote {
+  border-left-color: #a855f7;
+  background-color: #faf5ff;
+}
+
