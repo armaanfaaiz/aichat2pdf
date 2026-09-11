@@ -83,34 +83,45 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
   };
 
   return (
-    <div className="hero-input-section max-w-4xl mx-auto pt-8 pb-6 px-4 sm:px-6 text-center">
+    <div className="hero-input-section relative max-w-4xl mx-auto pt-6 sm:pt-10 pb-4 px-4 sm:px-6 text-center">
+      {/* Cool Ambient Glow behind the hero */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-56 bg-gradient-to-tr from-indigo-400/20 via-purple-400/15 to-pink-400/10 blur-3xl -z-10 pointer-events-none rounded-full" />
+
       {/* Universal AI Badge */}
-      <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-indigo-50 via-purple-50 to-amber-50 border border-indigo-100/80 text-indigo-800 text-xs font-semibold mb-4 shadow-xs">
-        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-        <span>Universal AI Studio: ChatGPT &bull; Google Gemini &bull; Anthropic Claude</span>
+      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-indigo-200/70 text-indigo-900 text-xs font-semibold mb-5 shadow-sm hover:border-indigo-300 transition-all">
+        <span className="flex h-2 w-2 relative">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+        </span>
+        <span className="tracking-wide">Universal AI Engine</span>
+        <span className="text-slate-300">&bull;</span>
+        <span className="text-slate-600 font-medium">ChatGPT &bull; Claude &bull; Gemini</span>
       </div>
 
       {/* Hero Title */}
-      <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight sm:leading-tight mb-4">
-        AI Chat to <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-600">Wonderful PDF</span> Notes
+      <h1 className="text-3xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.15] mb-4">
+        Convert AI Chats to <br className="hidden sm:inline" />
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+          Publication-Ready PDF
+        </span> Notes
       </h1>
 
-      <p className="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto mb-6">
-        Turn conversations from <strong className="text-emerald-700 font-semibold">ChatGPT</strong>,{' '}
-        <strong className="text-blue-700 font-semibold">Google Gemini</strong>, or{' '}
-        <strong className="text-amber-700 font-semibold">Claude</strong> into publication-grade study guides, cheatsheets, and executive PDFs.
+      <p className="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto mb-7 leading-relaxed">
+        Paste any conversation link or chat transcript from <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">ChatGPT</span>,{' '}
+        <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">Google Gemini</span>, or{' '}
+        <span className="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">Claude</span> to generate synthesis notes, flashcards, & executive matrices.
       </p>
 
       {/* Provider Selector Pills */}
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <span className="text-xs text-slate-400 font-medium">Source:</span>
+      <div className="flex items-center justify-center gap-2 mb-5">
+        <span className="text-xs text-slate-400 font-medium mr-1">Select AI:</span>
         <button
           type="button"
           onClick={() => setSelectedProvider('chatgpt')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition ${
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
             selectedProvider === 'chatgpt'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs ring-2 ring-emerald-400/20'
-              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-400 ring-2 ring-emerald-500/25 shadow-sm'
+              : 'bg-white/80 backdrop-blur-xs text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-white'
           }`}
         >
           <span>🤖</span>
@@ -119,22 +130,22 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
         <button
           type="button"
           onClick={() => setSelectedProvider('gemini')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition ${
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
             selectedProvider === 'gemini'
-              ? 'bg-blue-50 text-blue-800 border-blue-300 shadow-2xs ring-2 ring-blue-400/20'
-              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+              ? 'bg-blue-50 text-blue-900 border-blue-400 ring-2 ring-blue-500/25 shadow-sm'
+              : 'bg-white/80 backdrop-blur-xs text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-white'
           }`}
         >
           <span>♊</span>
-          <span>Google Gemini</span>
+          <span>Gemini</span>
         </button>
         <button
           type="button"
           onClick={() => setSelectedProvider('claude')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition ${
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
             selectedProvider === 'claude'
-              ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-2xs ring-2 ring-amber-400/20'
-              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+              ? 'bg-amber-50 text-amber-900 border-amber-400 ring-2 ring-amber-500/25 shadow-sm'
+              : 'bg-white/80 backdrop-blur-xs text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-white'
           }`}
         >
           <span>🧠</span>
@@ -142,37 +153,40 @@ export function InputHero({ onLoadConversation, onOpenPasteModal, isLoading, set
         </button>
       </div>
 
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto mb-4">
-        <div className="relative flex items-center bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-50 transition-all p-2">
-          <div className="pl-3 pr-2 text-slate-400">
-            <Link2 className="w-5 h-5" />
+      {/* Input Form with Floating Glassmorphism & Neon Glow Focus */}
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto mb-5">
+        <div className="group relative">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-xs opacity-30 group-focus-within:opacity-80 transition duration-500"></div>
+          <div className="relative flex items-center bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl shadow-indigo-950/5 border border-slate-200/90 group-focus-within:border-transparent transition-all p-2">
+            <div className="pl-3 pr-2 text-indigo-500">
+              <Link2 className="w-5 h-5" />
+            </div>
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Paste ChatGPT, Claude, or Gemini share link..."
+              className="w-full text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-hidden pr-2 font-medium"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !url.trim()}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold text-xs sm:text-sm transition-all shadow-md shadow-indigo-500/25 hover:shadow-indigo-500/40 shrink-0 transform active:scale-95"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Synthesizing...</span>
+                </>
+              ) : (
+                <>
+                  <span>Generate Notes</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
           </div>
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste a ChatGPT, Claude, or Gemini share link..."
-            className="w-full text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-hidden pr-2"
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !url.trim()}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-sm transition-all shadow-md shadow-indigo-200 hover:shadow-indigo-300 shrink-0"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Synthesizing...</span>
-              </>
-            ) : (
-              <>
-                <span>Generate Notes</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
         </div>
       </form>
 

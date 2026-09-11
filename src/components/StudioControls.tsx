@@ -116,9 +116,12 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
 
         {/* Theme Selector */}
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-2">
-            <Palette className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Visual Theme</span>
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2.5">
+            <div className="flex items-center gap-1.5">
+              <Palette className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Visual Theme (8 Styles)</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono">Live</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {themes.map((t) => {
@@ -128,17 +131,19 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
                   key={t.id}
                   type="button"
                   onClick={() => updateOption('theme', t.id)}
-                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                  className={`p-2.5 rounded-xl border text-left transition-all duration-200 transform active:scale-95 ${
                     isSelected
-                      ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-500/20 text-indigo-950'
-                      : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 text-slate-700'
+                      ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-500/30 text-indigo-950 shadow-xs'
+                      : 'border-slate-200/80 hover:border-slate-300 bg-white/60 hover:bg-white text-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 mb-0.5 text-xs font-semibold">
-                    <span>{t.icon}</span>
-                    <span>{t.name}</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5 text-xs font-bold">
+                      <span className="text-sm">{t.icon}</span>
+                      <span className="truncate">{t.name}</span>
+                    </div>
                   </div>
-                  <span className="text-[10px] text-slate-500 line-clamp-1">{t.desc}</span>
+                  <span className="text-[10px] text-slate-500 line-clamp-1 block">{t.desc}</span>
                 </button>
               );
             })}

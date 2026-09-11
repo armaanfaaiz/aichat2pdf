@@ -38,17 +38,22 @@ export function ViewSwitcher({ activeMode, onModeChange }: ViewSwitcherProps) {
   ];
 
   return (
-    <div className="view-switcher-bar no-print w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-2 mb-4">
+    <div className="view-switcher-bar no-print w-full bg-white/85 backdrop-blur-xl rounded-2xl border border-slate-200/90 shadow-sm p-2 sm:p-2.5 mb-5">
       <div className="flex items-center justify-between px-2 mb-2">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-          Note Structure / Style
-        </span>
-        <span className="text-[11px] text-indigo-600 font-medium hidden sm:inline">
-          Live instant preview &bull; Click to switch
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+            Output Layout Style
+          </span>
+        </div>
+        <span className="text-[11px] text-indigo-600 font-semibold hidden sm:inline-flex items-center gap-1">
+          <span>Instant live preview</span>
+          <span className="text-slate-300">&bull;</span>
+          <span className="text-slate-500 font-normal">Click to switch layout</span>
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-slate-100/70 rounded-xl">
         {views.map((v) => {
           const Icon = v.icon;
           const isActive = activeMode === v.id;
@@ -57,14 +62,13 @@ export function ViewSwitcher({ activeMode, onModeChange }: ViewSwitcherProps) {
               key={v.id}
               type="button"
               onClick={() => onModeChange(v.id)}
-              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-semibold text-xs transition-all ${
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-bold text-xs transition-all duration-200 ${
                 isActive
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 scale-[1.02]'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200/60'
+                  ? 'bg-white text-indigo-950 shadow-md shadow-slate-900/5 ring-1 ring-slate-900/5 transform scale-[1.02]'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
-              title={v.desc}
             >
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+              <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
               <span className="truncate">{v.label}</span>
             </button>
           );

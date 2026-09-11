@@ -14,22 +14,27 @@ interface NavbarProps {
 
 export function Navbar({ onSelectDemo, onOpenPasteModal, hasDocument, onPrint }: NavbarProps) {
   return (
-    <nav className="no-print sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md">
+    <nav className="no-print sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-xl transition-all shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-indigo-100">
-            <FileText className="w-5 h-5" />
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 rounded-xl blur-xs opacity-75 group-hover:opacity-100 transition duration-300"></div>
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-950 to-indigo-950 flex items-center justify-center text-white shadow-md">
+              <FileText className="w-5 h-5 text-indigo-400 group-hover:rotate-6 transition-transform" />
+            </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 text-lg tracking-tight">ChatPDF Notes</span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gradient-to-r from-indigo-50 via-purple-50 to-amber-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">
-                <Sparkles className="w-3 h-3 text-indigo-500" />
-                GPT &bull; Gemini &bull; Claude
+              <span className="font-extrabold text-slate-900 text-lg tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-800 bg-clip-text">
+                ChatPDF<span className="text-indigo-600">.ai</span>
+              </span>
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200/60 shadow-2xs">
+                <Sparkles className="w-3 h-3 text-indigo-500 animate-pulse" />
+                Universal Studio
               </span>
             </div>
-            <p className="text-xs text-slate-500 hidden sm:block">Turn AI chats into publication-grade PDF notes</p>
+            <p className="text-[11px] text-slate-500 font-medium hidden sm:block">AI Conversations &rarr; Executive Notes & PDF Guides</p>
           </div>
         </div>
 
