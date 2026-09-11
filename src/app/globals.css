@@ -348,3 +348,120 @@ body {
   background-color: #faf5ff;
 }
 
+/* Vintage Parchment Theme */
+.theme-vintage {
+  font-family: "Georgia", "Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
+.theme-vintage h1,
+.theme-vintage h2,
+.theme-vintage h3 {
+  font-family: "Georgia", "Palatino Linotype", serif;
+  color: #2c221e;
+}
+.theme-vintage .markdown-body blockquote {
+  border-left-color: #92400e;
+  background-color: #f5ece0;
+  color: #38281f;
+}
+.theme-vintage .markdown-body code {
+  background-color: #ede2cf;
+  color: #78350f;
+}
+
+/* Nordic Frost Theme */
+.theme-nord {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.theme-nord h1,
+.theme-nord h2,
+.theme-nord h3 {
+  color: #0f2942;
+}
+.theme-nord .markdown-body blockquote {
+  border-left-color: #0284c7;
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+.theme-nord .markdown-body code {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+/* Crimson Scholar Theme */
+.theme-crimson {
+  font-family: "Georgia", "Merriweather", "Times New Roman", serif;
+}
+.theme-crimson h1,
+.theme-crimson h2,
+.theme-crimson h3 {
+  font-family: "Georgia", "Merriweather", serif;
+  color: #4c0519;
+}
+.theme-crimson .markdown-body blockquote {
+  border-left-color: #be123c;
+  background-color: #ffe4e6;
+  color: #881337;
+}
+.theme-crimson .markdown-body code {
+  background-color: #ffe4e6;
+  color: #9f1239;
+}
+
+/* Deep Forest Pine Theme */
+.theme-forest {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.theme-forest h1,
+.theme-forest h2,
+.theme-forest h3 {
+  color: #143521;
+}
+.theme-forest .markdown-body blockquote {
+  border-left-color: #15803d;
+  background-color: #dcfce7;
+  color: #14532d;
+}
+.theme-forest .markdown-body code {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+/* Solarized Warm Theme */
+.theme-solarized {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.theme-solarized h1,
+.theme-solarized h2,
+.theme-solarized h3 {
+  color: #073642;
+}
+.theme-solarized .markdown-body blockquote {
+  border-left-color: #b58900;
+  background-color: #f7eed7;
+  color: #586e75;
+}
+.theme-solarized .markdown-body code {
+  background-color: #eee8d5;
+  color: #cb4b16;
+}
+
+/* Slate Executive Theme */
+.theme-slate {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.theme-slate h1,
+.theme-slate h2,
+.theme-slate h3 {
+  color: #0f172a;
+}
+.theme-slate .markdown-body blockquote {
+  border-left-color: #475569;
+  background-color: #f1f5f9;
+  color: #334155;
+}
+.theme-slate .markdown-body code {
+  background-color: #e2e8f0;
+  color: #1e293b;
+}
+
+

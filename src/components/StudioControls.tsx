@@ -29,15 +29,21 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
     setOptions((prev) => ({ ...prev, [key]: value }));
   };
 
-  const themes: Array<{ id: ThemeStyle; name: string; icon: string; desc: string }> = [
-    { id: 'academic', name: 'Academic Scholar', icon: '🎓', desc: 'Serif headings, ivory paper, formal review style' },
-    { id: 'modern', name: 'Modern Indigo', icon: '🌌', desc: 'Clean SaaS aesthetic, crisp indigo highlights' },
-    { id: 'minimalist', name: 'Minimalist Swiss', icon: '🌿', desc: 'Monochrome editorial, high contrast, clean grid' },
-    { id: 'emerald', name: 'Emerald Notion', icon: '💎', desc: 'Notion-style callouts, mint & forest green' },
-    { id: 'midnight', name: 'Midnight Dark', icon: '🌙', desc: 'Deep slate navy, luminescent electric blue' },
-    { id: 'sunset', name: 'Sunset Warmth', icon: '🌅', desc: 'Warm terracotta, peach tints, energizing study feel' },
-    { id: 'cyberpunk', name: 'Cyber Terminal', icon: '⚡', desc: 'Tech hacker vibe, monospace headers, neon amber' },
-    { id: 'lavender', name: 'Lavender Pastel', icon: '🌸', desc: 'Gentle violet tones, calm readable aesthetic' },
+  const themes: Array<{ id: ThemeStyle; name: string; icon: string; desc: string; color: string }> = [
+    { id: 'academic', name: 'Academic Scholar', icon: '🎓', desc: 'Serif headings, ivory paper, formal review style', color: '#8b5e34' },
+    { id: 'modern', name: 'Modern Indigo', icon: '🌌', desc: 'Clean SaaS aesthetic, crisp indigo highlights', color: '#4f46e5' },
+    { id: 'vintage', name: 'Vintage Parchment', icon: '📜', desc: 'Antique book paper, warm espresso ink', color: '#92400e' },
+    { id: 'nord', name: 'Nordic Frost', icon: '❄️', desc: 'Arctic ice blue tint, cool slate typography', color: '#0284c7' },
+    { id: 'crimson', name: 'Crimson Scholar', icon: '🏛️', desc: 'Oxford/Harvard deep crimson, bold scholarly borders', color: '#be123c' },
+    { id: 'forest', name: 'Deep Evergreen', icon: '🌲', desc: 'Rich pine tree moss, calming earthy green', color: '#15803d' },
+    { id: 'minimalist', name: 'Minimalist Swiss', icon: '🌿', desc: 'Monochrome editorial, high contrast, clean grid', color: '#18181b' },
+    { id: 'emerald', name: 'Emerald Notion', icon: '💎', desc: 'Notion-style callouts, mint & forest green', color: '#059669' },
+    { id: 'midnight', name: 'Midnight Dark', icon: '🌙', desc: 'Deep slate navy, electric luminescent blue', color: '#3b82f6' },
+    { id: 'cyberpunk', name: 'Cyber Terminal', icon: '⚡', desc: 'Tech hacker vibe, monospace headers, neon amber', color: '#f59e0b' },
+    { id: 'sunset', name: 'Sunset Warmth', icon: '🌅', desc: 'Warm terracotta, peach tints, energizing study feel', color: '#ea580c' },
+    { id: 'lavender', name: 'Lavender Pastel', icon: '🌸', desc: 'Gentle violet tones, calm readable aesthetic', color: '#9333ea' },
+    { id: 'solarized', name: 'Solarized Cream', icon: '☀️', desc: 'Classic solarized warm base, golden accents', color: '#b58900' },
+    { id: 'slate', name: 'Executive Slate', icon: '🖋️', desc: 'Steel corporate slate, charcoal typography', color: '#475569' },
   ];
 
   const modes: Array<{ id: NoteMode; name: string; icon: any; desc: string }> = [
@@ -119,7 +125,7 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
           <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-2.5">
             <div className="flex items-center gap-1.5">
               <Palette className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Visual Theme (8 Styles)</span>
+              <span>Visual Theme (14 Styles)</span>
             </div>
             <span className="text-[10px] text-slate-400 font-mono">Live</span>
           </div>
@@ -142,6 +148,11 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
                       <span className="text-sm">{t.icon}</span>
                       <span className={`truncate ${isSelected ? 'text-indigo-950' : 'text-slate-800'}`}>{t.name}</span>
                     </div>
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10 shadow-2xs"
+                      style={{ backgroundColor: t.color }}
+                      title={`${t.name} accent`}
+                    />
                   </div>
                   <span className="text-[10px] text-slate-500 line-clamp-1 block">{t.desc}</span>
                 </button>

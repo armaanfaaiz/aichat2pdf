@@ -97,10 +97,12 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           {/* Document Preview Area (order-1 on mobile so Android users see it first without scrolling!) */}
           <section id="studio-preview" className="lg:col-span-8 flex flex-col items-center order-1 lg:order-2 w-full">
-            {/* View Switcher Bar (Instant on-the-spot mode switch) */}
+            {/* View Switcher & Theme Selector Bar (Instant on-the-spot layout and theme switch) */}
             <ViewSwitcher
               activeMode={options.mode}
               onModeChange={handleModeChange}
+              activeTheme={options.theme}
+              onThemeChange={(theme) => setOptions((prev) => ({ ...prev, theme }))}
             />
 
             {/* Document Rendered Canvas with Floating Intro Animation on load/switch */}

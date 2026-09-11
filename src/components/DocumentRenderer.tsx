@@ -75,6 +75,18 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
         return 'theme-cyberpunk bg-[#0d1117] text-amber-100 border-amber-500/30';
       case 'lavender':
         return 'theme-lavender bg-[#fcfaff] text-slate-900 border-purple-100';
+      case 'vintage':
+        return 'theme-vintage bg-[#fbf6ed] text-[#2c221e] border-[#e5dcce]';
+      case 'nord':
+        return 'theme-nord bg-[#f0f7fa] text-[#0f2942] border-[#bae6fd]';
+      case 'crimson':
+        return 'theme-crimson bg-[#fffdfb] text-[#1c1917] border-[#fecdd3]';
+      case 'forest':
+        return 'theme-forest bg-[#f2f8f4] text-[#143521] border-[#bbf7d0]';
+      case 'solarized':
+        return 'theme-solarized bg-[#fdf6e3] text-[#586e75] border-[#eee8d5]';
+      case 'slate':
+        return 'theme-slate bg-[#f8fafc] text-[#0f172a] border-[#cbd5e1]';
       case 'modern':
       default:
         return 'theme-modern bg-white text-slate-900 border-slate-200/80';
@@ -97,6 +109,18 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
         return 'border-b-2 border-amber-400';
       case 'lavender':
         return 'border-b-2 border-purple-500';
+      case 'vintage':
+        return 'border-b-2 border-[#92400e]';
+      case 'nord':
+        return 'border-b-2 border-[#0284c7]';
+      case 'crimson':
+        return 'border-b-2 border-[#be123c]';
+      case 'forest':
+        return 'border-b-2 border-[#15803d]';
+      case 'solarized':
+        return 'border-b-2 border-[#b58900]';
+      case 'slate':
+        return 'border-b-2 border-[#475569]';
       case 'modern':
       default:
         return 'border-b-2 border-indigo-600';
@@ -119,6 +143,18 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
         return 'text-amber-400';
       case 'lavender':
         return 'text-purple-600';
+      case 'vintage':
+        return 'text-[#92400e]';
+      case 'nord':
+        return 'text-[#0284c7]';
+      case 'crimson':
+        return 'text-[#be123c]';
+      case 'forest':
+        return 'text-[#15803d]';
+      case 'solarized':
+        return 'text-[#b58900]';
+      case 'slate':
+        return 'text-[#475569]';
       case 'modern':
       default:
         return 'text-indigo-600';
@@ -141,6 +177,18 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
         return 'bg-[#161b22] border-amber-500/25 text-amber-50';
       case 'lavender':
         return 'bg-purple-50/40 border-purple-100 text-slate-900';
+      case 'vintage':
+        return 'bg-[#f4ecdf] border-[#e2d6c3] text-[#2c221e]';
+      case 'nord':
+        return 'bg-[#e2f1f8] border-[#bae6fd] text-[#0f2942]';
+      case 'crimson':
+        return 'bg-[#fff5f5] border-[#fecdd3] text-[#1c1917]';
+      case 'forest':
+        return 'bg-[#e9f5ec] border-[#bbf7d0] text-[#143521]';
+      case 'solarized':
+        return 'bg-[#f7eed7] border-[#eee8d5] text-[#586e75]';
+      case 'slate':
+        return 'bg-[#f1f5f9] border-[#cbd5e1] text-[#0f172a]';
       case 'modern':
       default:
         return 'bg-white border-slate-200 text-slate-900';

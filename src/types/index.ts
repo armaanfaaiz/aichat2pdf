@@ -30,7 +30,13 @@ export type ThemeStyle =
   | 'midnight'
   | 'cyberpunk'
   | 'sunset'
-  | 'lavender';
+  | 'lavender'
+  | 'vintage'
+  | 'nord'
+  | 'crimson'
+  | 'forest'
+  | 'solarized'
+  | 'slate';
 export type NoteMode = 'study' | 'brief' | 'cheatsheet' | 'transcript';
 export type ViewMode = 'study' | 'chat' | 'cheatsheet' | 'brief';
 
