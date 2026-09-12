@@ -57,12 +57,12 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
   const currentModeObj = modes.find((m) => m.id === options.mode) || modes[0];
 
   return (
-    <div className="no-print bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden transition-all text-slate-900">
+    <div className="no-print bg-white rounded-2xl border border-slate-200/90 shadow-sm transition-all text-slate-900 flex flex-col lg:max-h-[calc(100vh-6.5rem)] overflow-hidden">
       {/* Mobile Accordion Toggle Header (Visible on mobile screens) */}
       <button
         type="button"
         onClick={() => setIsMobileExpanded(!isMobileExpanded)}
-        className="w-full lg:hidden flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition text-left"
+        className="w-full lg:hidden shrink-0 flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition text-left"
       >
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -84,13 +84,21 @@ export function StudioControls({ options, setOptions, defaultTitle }: StudioCont
       </button>
 
       {/* Desktop Header (Always visible on large screens) */}
-      <div className="hidden lg:flex items-center gap-2 p-5 pb-3 border-b border-slate-100">
-        <Sliders className="w-4 h-4 text-indigo-600" />
-        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Studio Customizer</h3>
+      <div className="hidden lg:flex shrink-0 items-center justify-between p-4 pb-3 border-b border-slate-100 bg-white">
+        <div className="flex items-center gap-2">
+          <Sliders className="w-4 h-4 text-indigo-600" />
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Studio Customizer</h3>
+        </div>
+        <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Scrollable</span>
       </div>
 
-      {/* Collapsible Content Body (Always open on lg, collapsible on mobile) */}
-      <div className={`p-5 space-y-6 ${isMobileExpanded ? 'block' : 'hidden lg:block'}`}>
+      {/* Collapsible Content Body (Scrollable with mousewheel / touch on all screen sizes) */}
+      <div
+        className={`p-4 sm:p-5 space-y-6 overflow-y-auto overscroll-contain flex-1 max-h-[70vh] lg:max-h-none ${
+          isMobileExpanded ? 'block' : 'hidden lg:block'
+        }`}
+        style={{ scrollbarWidth: 'thin' }}
+      >
         {/* Note Mode Selector */}
         <div>
           <label className="block text-xs font-bold text-slate-800 mb-2">Note Structure / Style</label>

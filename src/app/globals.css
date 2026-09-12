@@ -87,6 +87,11 @@ body {
   background: rgba(148, 163, 184, 0.7);
 }
 
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
 /* Markdown Formatted Typography & Tables */
 .markdown-body {
   line-height: 1.65;

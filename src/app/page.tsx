@@ -115,7 +115,7 @@ export default function Home() {
           </section>
 
           {/* Customizer Sidebar (order-2 on mobile, sticky left on desktop) */}
-          <aside className="lg:col-span-4 lg:sticky lg:top-20 space-y-4 order-2 lg:order-1 w-full">
+          <aside className="lg:col-span-4 lg:sticky lg:top-20 order-2 lg:order-1 w-full lg:max-h-[calc(100vh-6rem)]">
             <StudioControls
               options={options}
               setOptions={setOptions}
