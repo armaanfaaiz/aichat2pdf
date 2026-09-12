@@ -11,7 +11,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { GeneratedNotes, CustomizationOptions } from '@/types';
-import { printDocument, exportToPdfDirect, generateDirectTextPdf } from '@/lib/pdf-exporter';
+import { printDocument, exportToPdfDirect } from '@/lib/pdf-exporter';
 import { convertNotesToMarkdown, downloadFile } from '@/lib/markdown-exporter';
 import confetti from 'canvas-confetti';
 
@@ -50,31 +50,15 @@ export function ExportToolbar({ notes, options }: ExportToolbarProps) {
         .toLowerCase()
         .replace(/[^a-z0-9]/gi, '_');
 
-      try {
-        await exportToPdfDirect('printable-document', filename, (msg) => setStatusMsg(msg));
-      } catch (canvasErr) {
-        console.warn('Canvas PDF encountered an issue, generating via direct PDF engine:', canvasErr);
-        setStatusMsg('Generating direct PDF...');
-        generateDirectTextPdf(notes, options, filename);
-      }
+      await exportToPdfDirect('printable-document', filename, (msg) => setStatusMsg(msg));
 
       triggerConfetti();
       setStatusMsg('Downloaded!');
       setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) {
       console.error('Direct PDF export error:', err);
-      // Fallback to text generator so a file is ALWAYS downloaded
-      try {
-        const filename = `${options.customTitle || notes.title || 'chatgpt-notes'}.pdf`
-          .toLowerCase()
-          .replace(/[^a-z0-9]/gi, '_');
-        generateDirectTextPdf(notes, options, filename);
-        triggerConfetti();
-        setStatusMsg('Downloaded!');
-        setTimeout(() => setStatusMsg(null), 3000);
-      } catch (finalErr) {
-        alert('Could not download PDF: ' + (err?.message || 'Unknown error'));
-      }
+      setStatusMsg('Download failed');
+      setTimeout(() => setStatusMsg(null), 3000);
     } finally {
       setIsExportingPdf(false);
     }
