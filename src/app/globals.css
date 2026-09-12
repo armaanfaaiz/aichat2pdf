@@ -206,22 +206,15 @@ body {
 
 /* Print CSS Media Queries for High-Res Vector PDF Generation */
 @media print {
-  html, body {
-    background: #ffffff !important;
-    color: #000000 !important;
-    font-size: 11pt !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
   @page {
     size: A4 portrait;
-    margin: 14mm 14mm 14mm 14mm;
+    margin: 12mm 12mm 12mm 12mm;
   }
 
   html, body {
-    background: white !important;
+    background: #ffffff !important;
     color: #0f172a !important;
+    font-size: 11pt !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
@@ -229,28 +222,7 @@ body {
     overflow: visible !important;
   }
 
-  section,
-  .space-y-4,
-  .space-y-6,
-  .space-y-8,
-  .space-y-12,
-  .grid,
-  main,
-  section#studio-preview,
-  .animate-note-open,
-  div:has(> #printable-document),
-  div:has(> * > #printable-document) {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    float: none !important;
-    position: static !important;
-    break-inside: auto !important;
-    page-break-inside: auto !important;
-  }
-
+  /* Hide screen chrome, sidebars, navigation, toolbars, and modals */
   .no-print,
   nav,
   aside,
@@ -264,22 +236,36 @@ body {
     display: none !important;
   }
 
+  /* Unconstrain ONLY outer page layout parents outside #printable-document */
+  main,
+  section#studio-preview,
+  .animate-note-open,
+  div:has(> #printable-document),
+  div:has(> * > #printable-document) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    position: static !important;
+  }
+
+  /* The printable document itself retains its pristine preview styling, grids, padding & theme */
   #printable-document {
     display: block !important;
     position: static !important;
     width: 100% !important;
     max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0 auto !important;
     box-shadow: none !important;
-    border: none !important;
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;
-    break-inside: auto !important;
-    page-break-inside: auto !important;
+    filter: none !important;
   }
 
+  /* Allow cards and elements to avoid awkward page breaks */
   .page-break-before {
     page-break-before: always !important;
     break-before: page !important;
