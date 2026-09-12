@@ -265,15 +265,57 @@ body {
     filter: none !important;
   }
 
+  /* Prevent orphan headings and section titles at page bottom */
+  .section-header,
+  .break-after-avoid,
+  h1, h2, h3, h4, h5, h6 {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Allow structural containers to paginate without pushing entire sections */
+  section,
+  .space-y-3,
+  .space-y-4,
+  .space-y-6,
+  .space-y-8,
+  .space-y-12 {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Large compound cards (Q&A cards, long transcript turns) paginate smoothly */
+  .qa-card,
+  .transcript-turn {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
   /* Allow cards and elements to avoid awkward page breaks */
   .page-break-before {
     page-break-before: always !important;
     break-before: page !important;
   }
 
-  .avoid-break {
-    page-break-inside: avoid;
+  /* Discrete atomic cards and blocks avoid breaking internally */
+  .avoid-break,
+  .takeaway-card,
+  .quiz-card,
+  .glossary-card,
+  .action-item,
+  pre,
+  code,
+  blockquote,
+  tr {
     break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  p {
+    orphans: 2;
+    widows: 2;
   }
 
   a {

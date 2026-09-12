@@ -78,7 +78,7 @@ export async function exportToExactPreviewPdf(
     },
     pagebreak: {
       mode: ['avoid-all', 'css', 'legacy'],
-      avoid: ['.avoid-break', 'section', 'h1', 'h2', 'h3', 'pre', 'code', 'tr'],
+      avoid: ['.avoid-break', '.section-header', 'h1', 'h2', 'h3', 'pre', 'code', 'tr'],
     },
   };
 

@@ -356,7 +356,7 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
           {/* Executive Summary */}
           {options.includeSummary && notes.executiveSummary && (
             <section id="section-summary">
-              <div className={`flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
+              <div className={`section-header break-after-avoid avoid-break flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
                 <FileText className={`w-5 h-5 ${getAccentIconColor(theme)}`} />
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight">Executive Summary</h2>
               </div>
@@ -369,7 +369,7 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
           {/* Key Takeaways */}
           {options.includeTakeaways && notes.keyTakeaways.length > 0 && (
             <section id="section-takeaways">
-              <div className={`flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
+              <div className={`section-header break-after-avoid avoid-break flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
                 <Sparkles className={`w-5 h-5 ${getAccentIconColor(theme)}`} />
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight">Key Takeaways & Core Insights</h2>
               </div>
@@ -377,7 +377,7 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
                 {notes.keyTakeaways.map((takeaway, idx) => (
                   <div
                     key={idx}
-                    className={`avoid-break flex items-start gap-3 p-3.5 rounded-xl border shadow-xs transition ${getCardBgClass(theme)}`}
+                    className={`avoid-break takeaway-card flex items-start gap-3 p-3.5 rounded-xl border shadow-xs transition ${getCardBgClass(theme)}`}
                   >
                     <div className="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                       {idx + 1}
@@ -394,7 +394,7 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
           {/* Detailed Q&A Breakdown */}
           {options.includeQA && notes.qaBreakdown.length > 0 && (
             <section id="section-qa" className="space-y-6">
-              <div className={`flex items-center gap-2 mb-4 pb-2 ${getAccentBar(theme)}`}>
+              <div className={`section-header break-after-avoid avoid-break flex items-center gap-2 mb-4 pb-2 ${getAccentBar(theme)}`}>
                 <BookOpen className={`w-5 h-5 ${getAccentIconColor(theme)}`} />
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight">Detailed Breakdown & Analysis</h2>
               </div>
@@ -402,9 +402,9 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
               {notes.qaBreakdown.map((item, idx) => (
                 <div
                   key={item.id}
-                  className={`avoid-break p-6 rounded-2xl border shadow-xs space-y-4 ${getCardBgClass(theme)}`}
+                  className={`qa-card p-6 rounded-2xl border shadow-xs space-y-4 ${getCardBgClass(theme)}`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 break-after-avoid">
                     <div className="px-2.5 py-1 rounded-md bg-black/5 dark:bg-white/10 font-mono text-xs font-bold shrink-0">
                       #{idx + 1}
                     </div>
@@ -418,7 +418,7 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
                   </div>
 
                   {item.keyPoints && item.keyPoints.length > 0 && (
-                    <div className="ml-1 sm:ml-9 p-3.5 rounded-xl bg-black/5 dark:bg-white/5 border border-current/10 text-xs space-y-1.5">
+                    <div className="avoid-break ml-1 sm:ml-9 p-3.5 rounded-xl bg-black/5 dark:bg-white/5 border border-current/10 text-xs space-y-1.5">
                       <span className="font-semibold block mb-1 text-[11px] uppercase tracking-wider opacity-80">
                         Important Highlights
                       </span>
@@ -432,7 +432,7 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
                   )}
 
                   {item.code && (
-                    <div className="ml-1 sm:ml-9">
+                    <div className="avoid-break ml-1 sm:ml-9">
                       <CodeBlock code={item.code} language={item.language} />
                     </div>
                   )}
@@ -444,34 +444,36 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
           {/* Code Catalog */}
           {options.includeCode && notes.codeSnippets.length > 0 && (
             <section id="section-code" className="space-y-4">
-              <div className={`flex items-center gap-2 mb-4 pb-2 ${getAccentBar(theme)}`}>
+              <div className={`section-header break-after-avoid avoid-break flex items-center gap-2 mb-4 pb-2 ${getAccentBar(theme)}`}>
                 <Terminal className={`w-5 h-5 ${getAccentIconColor(theme)}`} />
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight">Code Snippet Reference</h2>
               </div>
-              {notes.codeSnippets.map((snippet) => (
-                <div key={snippet.id} className="avoid-break space-y-2">
-                  <h3 className="text-sm font-bold flex items-center gap-2">
-                    <Hash className={`w-4 h-4 ${getAccentIconColor(theme)}`} />
-                    <span>{snippet.title}</span>
-                  </h3>
-                  <p className="text-xs opacity-60 italic">{snippet.explanation}</p>
-                  <CodeBlock code={snippet.code} language={snippet.language} />
-                </div>
-              ))}
+              <div className="space-y-4">
+                {notes.codeSnippets.map((snippet) => (
+                  <div key={snippet.id} className="avoid-break space-y-2">
+                    <h3 className="text-sm font-bold flex items-center gap-2 break-after-avoid">
+                      <Hash className={`w-4 h-4 ${getAccentIconColor(theme)}`} />
+                      <span>{snippet.title}</span>
+                    </h3>
+                    <p className="text-xs opacity-60 italic">{snippet.explanation}</p>
+                    <CodeBlock code={snippet.code} language={snippet.language} />
+                  </div>
+                ))}
+              </div>
             </section>
           )}
 
           {/* Review Quiz */}
           {options.includeQuiz && notes.reviewQuiz.length > 0 && (
             <section id="section-quiz" className="space-y-3">
-              <div className={`flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
+              <div className={`section-header break-after-avoid avoid-break flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
                 <HelpCircle className={`w-5 h-5 ${getAccentIconColor(theme)}`} />
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight">Review Questions & Flashcards</h2>
               </div>
               {notes.reviewQuiz.map((quiz, idx) => {
                 const isRevealed = !!revealedQuiz[quiz.id];
                 return (
-                  <div key={quiz.id} className={`avoid-break p-4 rounded-xl border shadow-xs space-y-2 ${getCardBgClass(theme)}`}>
+                  <div key={quiz.id} className={`avoid-break quiz-card p-4 rounded-xl border shadow-xs space-y-2 ${getCardBgClass(theme)}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-2.5">
                         <span className={`font-mono text-xs font-bold shrink-0 ${getAccentIconColor(theme)}`}>Q{idx + 1}.</span>
@@ -499,13 +501,13 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
           {/* Glossary */}
           {options.includeGlossary && notes.glossary.length > 0 && (
             <section id="section-glossary">
-              <div className={`flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
+              <div className={`section-header break-after-avoid avoid-break flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
                 <Bookmark className={`w-5 h-5 ${getAccentIconColor(theme)}`} />
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight">Technical Glossary</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {notes.glossary.map((item, idx) => (
-                  <div key={idx} className={`avoid-break p-3.5 rounded-xl border text-xs ${getCardBgClass(theme)}`}>
+                  <div key={idx} className={`avoid-break glossary-card p-3.5 rounded-xl border text-xs ${getCardBgClass(theme)}`}>
                     <span className="font-bold block mb-1 font-mono">{item.term}</span>
                     <p className="opacity-75 leading-relaxed">{item.definition}</p>
                   </div>
@@ -517,7 +519,7 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
           {/* Action Items */}
           {options.includeActionItems && notes.actionItems.length > 0 && (
             <section id="section-actions">
-              <div className={`flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
+              <div className={`section-header break-after-avoid avoid-break flex items-center gap-2 mb-3 pb-2 ${getAccentBar(theme)}`}>
                 <CheckSquare className={`w-5 h-5 ${getAccentIconColor(theme)}`} />
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight">Implementation Checklist</h2>
               </div>
@@ -639,7 +641,7 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
       {/* ========================================================= */}
       {activeMode === 'transcript' && (
         <div className="space-y-6">
-          <div className={`flex items-center gap-2 mb-6 pb-2 ${getAccentBar(theme)}`}>
+          <div className={`section-header break-after-avoid avoid-break flex items-center gap-2 mb-6 pb-2 ${getAccentBar(theme)}`}>
             <Bot className={`w-5 h-5 ${getAccentIconColor(theme)}`} />
             <h2 className="text-lg sm:text-xl font-bold tracking-tight">Conversation Flow</h2>
           </div>
@@ -648,13 +650,13 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
             {notes.rawTranscript.map((msg, idx) => (
               <div
                 key={msg.id || idx}
-                className={`avoid-break rounded-2xl p-5 border transition-all ${
+                className={`transcript-turn rounded-2xl p-5 border transition-all ${
                   msg.role === 'user'
                     ? `${getCardBgClass(theme)} ring-1 ring-current/10 shadow-xs`
                     : `${getCardBgClass(theme)} shadow-xs`
                 }`}
               >
-                <div className="flex items-center gap-2.5 mb-3 pb-2 border-b border-current/10 text-xs font-semibold">
+                <div className="flex items-center gap-2.5 mb-3 pb-2 border-b border-current/10 text-xs font-semibold break-after-avoid">
                   {msg.role === 'user' ? (
                     <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold">
                       <User className="w-4 h-4" />
