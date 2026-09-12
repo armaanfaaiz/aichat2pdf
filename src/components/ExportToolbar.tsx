@@ -18,9 +18,10 @@ import confetti from 'canvas-confetti';
 interface ExportToolbarProps {
   notes: GeneratedNotes;
   options: CustomizationOptions;
+  onOpenDownloadModal?: () => void;
 }
 
-export function ExportToolbar({ notes, options }: ExportToolbarProps) {
+export function ExportToolbar({ notes, options, onOpenDownloadModal }: ExportToolbarProps) {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [copiedMd, setCopiedMd] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -43,6 +44,10 @@ export function ExportToolbar({ notes, options }: ExportToolbarProps) {
   };
 
   const handleDirectPdf = async () => {
+    if (onOpenDownloadModal) {
+      onOpenDownloadModal();
+      return;
+    }
     setIsExportingPdf(true);
     setStatusMsg('Downloading PDF...');
     try {

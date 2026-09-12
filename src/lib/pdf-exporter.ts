@@ -1,12 +1,21 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { GeneratedNotes, CustomizationOptions } from '@/types';
 
 /**
- * Triggers native high-resolution browser print dialog targeted at the document element.
- * This delivers vector-grade crisp typography, true page numbers, and custom print layout.
+ * Triggers native browser print dialog.
  */
 export function printDocument() {
-  window.print();
+  if (typeof window !== 'undefined') {
+    window.print();
+  }
+}
+
+export interface PdfExportResult {
+  blob: Blob;
+  blobUrl: string;
+  filename: string;
+  totalPages: number;
 }
 
 const THEME_BACKGROUNDS: Record<string, string> = {
@@ -27,14 +36,41 @@ const THEME_BACKGROUNDS: Record<string, string> = {
 };
 
 /**
+ * Robust cross-browser blob file download trigger.
+ * Safe against mobile browser gesture timeouts.
+ */
+export function triggerBlobDownload(blob: Blob, filename: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch {
+        // ignore
+      }
+    }, 15000);
+  } catch (err) {
+    console.error('Download trigger error:', err);
+  }
+}
+
+/**
  * Captures the exact rendered document canvas (matching the on-screen preview 1:1)
- * and downloads a high-fidelity A4 PDF file directly to the user's device.
+ * and generates a high-fidelity A4 PDF file directly to the user's device.
  */
 export async function exportToPdfDirect(
   elementId: string,
   filename: string,
   onProgress?: (status: string) => void
-): Promise<void> {
+): Promise<PdfExportResult> {
   const element = document.getElementById(elementId);
   if (!element) {
     throw new Error(`Element #${elementId} not found`);
@@ -42,8 +78,6 @@ export async function exportToPdfDirect(
 
   onProgress?.('Preparing document for capture...');
 
-  // Safe scale determination:
-  // Mobile browsers cap canvas dimension at 4096px, desktop at 8192px
   const isMobile =
     typeof window !== 'undefined' &&
     (window.innerWidth < 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
@@ -153,7 +187,7 @@ export async function exportToPdfDirect(
   const totalPages = Math.max(1, Math.ceil(totalCanvasHeight / pageHeightPx));
 
   for (let page = 0; page < totalPages; page++) {
-    onProgress?.(`Processing page ${page + 1} of ${totalPages}...`);
+    onProgress?.(`Compiling page ${page + 1} of ${totalPages}...`);
 
     if (page > 0) {
       pdf.addPage('a4', 'portrait');
@@ -170,11 +204,11 @@ export async function exportToPdfDirect(
     const pageCtx = pageCanvas.getContext('2d');
 
     if (pageCtx) {
-      // Fill page with the exact theme background color
+      // Fill page with exact theme background color
       pageCtx.fillStyle = themeBg;
       pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
 
-      // Draw the exact slice from the master canvas
+      // Draw the slice from the master canvas
       pageCtx.drawImage(
         canvas,
         0,
@@ -192,7 +226,240 @@ export async function exportToPdfDirect(
     }
   }
 
-  onProgress?.('Downloading PDF file...');
+  onProgress?.('Finalizing PDF download...');
   const finalFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
-  pdf.save(finalFilename);
+  const blob = pdf.output('blob');
+  const blobUrl = URL.createObjectURL(blob);
+
+  // Auto-trigger download
+  triggerBlobDownload(blob, finalFilename);
+
+  return {
+    blob,
+    blobUrl,
+    filename: finalFilename,
+    totalPages,
+  };
+}
+
+/**
+ * Pure direct vector PDF generator.
+ * Ultra-fast, 100% reliable across all browsers & devices, vector-crisp typography.
+ */
+export function generateDirectVectorPdf(
+  notes: GeneratedNotes,
+  options: CustomizationOptions,
+  filename: string
+): PdfExportResult {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 18;
+  const maxWidth = pageWidth - margin * 2;
+  let y = margin + 5;
+
+  const checkPageBreak = (neededHeight: number) => {
+    if (y + neededHeight > pageHeight - margin - 10) {
+      pdf.addPage('a4', 'portrait');
+      y = margin + 5;
+    }
+  };
+
+  // Header Title
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(22);
+  pdf.setTextColor(15, 23, 42); // slate-900
+  const titleText = options.customTitle || notes.title || 'ChatGPT Study Notes';
+  const titleLines = pdf.splitTextToSize(titleText, maxWidth);
+  checkPageBreak(titleLines.length * 9 + 15);
+  pdf.text(titleLines, margin, y);
+  y += titleLines.length * 9 + 4;
+
+  // Metadata subtitle
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(100, 116, 139); // slate-500
+  pdf.text(
+    `${notes.date}  •  Author: ${options.authorName || 'AI Synthesizer'}  •  ${notes.readingTimeMinutes} min read  •  Mode: ${(options.mode || 'study').toUpperCase()}`,
+    margin,
+    y
+  );
+  y += 7;
+
+  // Divider line
+  pdf.setDrawColor(226, 232, 240);
+  pdf.setLineWidth(0.5);
+  pdf.line(margin, y, pageWidth - margin, y);
+  y += 9;
+
+  // Executive Summary
+  if (options.includeSummary && notes.executiveSummary) {
+    checkPageBreak(30);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(79, 70, 229); // indigo-600
+    pdf.text('Executive Summary', margin, y);
+    y += 6;
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(30, 41, 59);
+    const summaryLines = pdf.splitTextToSize(notes.executiveSummary, maxWidth);
+    checkPageBreak(summaryLines.length * 5 + 8);
+    pdf.text(summaryLines, margin, y);
+    y += summaryLines.length * 5 + 8;
+  }
+
+  // Key Takeaways
+  if (options.includeTakeaways && notes.keyTakeaways && notes.keyTakeaways.length > 0) {
+    checkPageBreak(25);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(79, 70, 229);
+    pdf.text('Key Takeaways & Core Concepts', margin, y);
+    y += 6;
+
+    notes.keyTakeaways.forEach((item) => {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(30, 41, 59);
+      const itemLines = pdf.splitTextToSize(`•  ${item}`, maxWidth);
+      checkPageBreak(itemLines.length * 5 + 4);
+      pdf.text(itemLines, margin, y);
+      y += itemLines.length * 5 + 4;
+    });
+    y += 6;
+  }
+
+  // Detailed Q&A Breakdown
+  if (options.includeQA && notes.qaBreakdown && notes.qaBreakdown.length > 0) {
+    checkPageBreak(25);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(79, 70, 229);
+    pdf.text('Detailed Breakdown & Analysis', margin, y);
+    y += 6;
+
+    notes.qaBreakdown.forEach((qa, i) => {
+      // Question
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(15, 23, 42);
+      const qLines = pdf.splitTextToSize(`Q${i + 1}: ${qa.question}`, maxWidth);
+      checkPageBreak(qLines.length * 5.5 + 8);
+      pdf.text(qLines, margin, y);
+      y += qLines.length * 5.5 + 3;
+
+      // Answer
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(51, 65, 85);
+      const aLines = pdf.splitTextToSize(qa.answer, maxWidth);
+      checkPageBreak(aLines.length * 4.8 + 8);
+      pdf.text(aLines, margin, y);
+      y += aLines.length * 4.8 + 8;
+    });
+    y += 4;
+  }
+
+  // Action Items / Checklist
+  if (options.includeActionItems && notes.actionItems && notes.actionItems.length > 0) {
+    checkPageBreak(25);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(79, 70, 229);
+    pdf.text('Action Items & Implementation Checklist', margin, y);
+    y += 6;
+
+    notes.actionItems.forEach((item: string) => {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(30, 41, 59);
+      const lines = pdf.splitTextToSize(`[  ]  ${item}`, maxWidth);
+      checkPageBreak(lines.length * 5 + 3);
+      pdf.text(lines, margin, y);
+      y += lines.length * 5 + 3;
+    });
+    y += 6;
+  }
+
+  // Self-Testing Quiz
+  if (options.includeQuiz && notes.reviewQuiz && notes.reviewQuiz.length > 0) {
+    checkPageBreak(25);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(79, 70, 229);
+    pdf.text('Self-Testing Review Quiz', margin, y);
+    y += 6;
+
+    notes.reviewQuiz.forEach((q, i: number) => {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(15, 23, 42);
+      const qLines = pdf.splitTextToSize(`${i + 1}. ${q.question}`, maxWidth);
+      checkPageBreak(qLines.length * 5 + 6);
+      pdf.text(qLines, margin, y);
+      y += qLines.length * 5 + 2;
+
+      pdf.setFont('helvetica', 'italic');
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(71, 85, 105);
+      const ansLines = pdf.splitTextToSize(`Answer: ${q.answer}`, maxWidth);
+      checkPageBreak(ansLines.length * 4.5 + 6);
+      pdf.text(ansLines, margin, y);
+      y += ansLines.length * 4.5 + 6;
+    });
+    y += 6;
+  }
+
+  // Glossary
+  if (options.includeGlossary && notes.glossary && notes.glossary.length > 0) {
+    checkPageBreak(25);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(79, 70, 229);
+    pdf.text('Glossary of Key Terminology', margin, y);
+    y += 6;
+
+    notes.glossary.forEach((t) => {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(51, 65, 85);
+      const defLines = pdf.splitTextToSize(`${t.term}: ${t.definition}`, maxWidth);
+      checkPageBreak(defLines.length * 4.5 + 4);
+      pdf.text(defLines, margin, y);
+      y += defLines.length * 4.5 + 4;
+    });
+  }
+
+  // Footer page numbers on all pages
+  const totalPages = pdf.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    pdf.setPage(p);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(148, 163, 184);
+    pdf.text(
+      `Page ${p} of ${totalPages}  •  Generated with ChatPDF AI Notes Studio`,
+      margin,
+      pageHeight - 8
+    );
+  }
+
+  const finalFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+  const blob = pdf.output('blob');
+  const blobUrl = URL.createObjectURL(blob);
+  triggerBlobDownload(blob, finalFilename);
+
+  return {
+    blob,
+    blobUrl,
+    filename: finalFilename,
+    totalPages,
+  };
 }
