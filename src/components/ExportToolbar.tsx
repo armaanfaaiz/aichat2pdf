@@ -44,18 +44,24 @@ export function ExportToolbar({ notes, options }: ExportToolbarProps) {
 
   const handleDirectPdf = async () => {
     setIsExportingPdf(true);
-    setStatusMsg('Generating PDF...');
+    setStatusMsg('Preparing PDF...');
     try {
       const filename = `${options.customTitle || notes.title || 'chatgpt-notes'}.pdf`
         .toLowerCase()
         .replace(/[^a-z0-9]/gi, '_');
       await exportToPdfDirect('printable-document', filename, (msg) => setStatusMsg(msg));
       triggerConfetti();
+      setStatusMsg('Downloaded!');
+      setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) {
-      alert('Failed to generate direct PDF: ' + err.message);
+      console.error('Direct PDF export error:', err);
+      setStatusMsg('Opening print dialog fallback...');
+      setTimeout(() => {
+        printDocument();
+        setStatusMsg(null);
+      }, 800);
     } finally {
       setIsExportingPdf(false);
-      setStatusMsg(null);
     }
   };
 
