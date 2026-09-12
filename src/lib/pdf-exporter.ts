@@ -56,28 +56,52 @@ export async function exportToPdfDirect(
     useCORS: true,
     logging: false,
     backgroundColor: themeBg,
-    windowWidth: element.scrollWidth || 860,
-    onclone: (_clonedDoc, clonedElement) => {
-      // Remove temporary intro animations so the capture is steady & crisp
-      if (clonedElement) {
-        clonedElement.style.transform = 'none';
-        clonedElement.style.animation = 'none';
-        clonedElement.style.transition = 'none';
-        clonedElement.style.filter = 'none';
-        clonedElement.classList.remove('animate-note-open');
-
-        const animatedChildren = clonedElement.querySelectorAll(
-          '.animate-note-open, .animate-pulse, .animate-shimmer'
-        );
-        animatedChildren.forEach((child) => {
-          const el = child as HTMLElement;
-          el.style.animation = 'none';
-          el.style.transform = 'none';
-          el.style.filter = 'none';
-        });
+    scrollX: 0,
+    scrollY: 0,
+    x: 0,
+    y: 0,
+    onclone: (clonedDoc, clonedElement) => {
+      // Ensure iframe window is scrolled to absolute top-left
+      if (clonedDoc.defaultView) {
+        clonedDoc.defaultView.scrollTo(0, 0);
       }
+
+      // Isolate clonedElement so it starts at exact (0, 0) in the cloned iframe
+      // This prevents scroll offset / navbar offset bugs that produce blank canvases!
+      const body = clonedDoc.body;
+      body.innerHTML = '';
+      body.style.margin = '0';
+      body.style.padding = '0';
+      body.style.backgroundColor = themeBg;
+      body.appendChild(clonedElement);
+
+      clonedElement.style.margin = '0';
+      clonedElement.style.position = 'static';
+      clonedElement.style.transform = 'none';
+      clonedElement.style.animation = 'none';
+      clonedElement.style.transition = 'none';
+      clonedElement.style.filter = 'none';
+      clonedElement.style.boxShadow = 'none';
+      clonedElement.style.width = '800px';
+      clonedElement.style.maxWidth = '800px';
+      clonedElement.classList.remove('animate-note-open');
+
+      // Also neutralize animations on child nodes
+      const animatedChildren = clonedElement.querySelectorAll(
+        '.animate-note-open, .animate-pulse, .animate-shimmer'
+      );
+      animatedChildren.forEach((child) => {
+        const el = child as HTMLElement;
+        el.style.animation = 'none';
+        el.style.transform = 'none';
+        el.style.filter = 'none';
+      });
     },
   });
+
+  if (!canvas || canvas.width === 0 || canvas.height === 0) {
+    throw new Error('Canvas render produced an empty image');
+  }
 
   onProgress?.('Formatting PDF pages...');
 
@@ -88,9 +112,9 @@ export async function exportToPdfDirect(
     compress: true,
   });
 
-  const pdfWidthMm = pdf.internal.pageSize.getWidth(); // 210 mm
-  const pdfHeightMm = pdf.internal.pageSize.getHeight(); // 297 mm
-  const aspectRatio = pdfHeightMm / pdfWidthMm; // ~1.4142
+  const pdfWidthMm = 210; // Standard A4 width
+  const pdfHeightMm = 297; // Standard A4 height
+  const aspectRatio = pdfHeightMm / pdfWidthMm; // ~1.4142857
 
   // Height of one A4 page in canvas pixels
   const pageHeightPx = Math.floor(canvas.width * aspectRatio);
@@ -101,7 +125,7 @@ export async function exportToPdfDirect(
     onProgress?.(`Processing page ${page + 1} of ${totalPages}...`);
 
     if (page > 0) {
-      pdf.addPage();
+      pdf.addPage('a4', 'portrait');
     }
 
     const srcY = page * pageHeightPx;
@@ -115,7 +139,7 @@ export async function exportToPdfDirect(
     const pageCtx = pageCanvas.getContext('2d');
 
     if (pageCtx) {
-      // Fill page with the exact theme background color
+      // Fill page with the exact theme background color (e.g. Midnight dark navy, Vintage cream, etc.)
       pageCtx.fillStyle = themeBg;
       pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
 
