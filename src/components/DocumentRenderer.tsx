@@ -196,12 +196,13 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
   };
 
   return (
-    <div
-      id="printable-document"
-      className={`animate-note-open w-full max-w-[860px] mx-auto p-6 sm:p-12 transition-all duration-300 shadow-xl rounded-2xl border border-slate-200/80 ${getThemeClass(
-        theme
-      )}`}
-    >
+    <div className="animate-note-open w-full">
+      <div
+        id="printable-document"
+        className={`w-full max-w-[860px] mx-auto p-6 sm:p-12 transition-all duration-300 shadow-xl rounded-2xl border border-slate-200/80 ${getThemeClass(
+          theme
+        )}`}
+      >
       {/* ========================================================= */}
       {/* 1. COVER PAGE (Shared across all styles if enabled)       */}
       {/* ========================================================= */}
@@ -692,5 +693,6 @@ export function DocumentRenderer({ notes, options }: DocumentRendererProps) {
         <span>{notes.date} &bull; {activeMode.toUpperCase()} MODE</span>
       </footer>
     </div>
+  </div>
   );
 }

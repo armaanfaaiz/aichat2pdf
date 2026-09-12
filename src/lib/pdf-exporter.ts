@@ -9,6 +9,23 @@ export function printDocument() {
   window.print();
 }
 
+const THEME_BACKGROUNDS: Record<string, string> = {
+  academic: '#fdfcf9',
+  minimalist: '#ffffff',
+  emerald: '#f7fbf8',
+  midnight: '#090d16',
+  sunset: '#fffbf7',
+  cyberpunk: '#0d1117',
+  lavender: '#fcfaff',
+  vintage: '#fbf6ed',
+  nord: '#f0f7fa',
+  crimson: '#fffdfb',
+  forest: '#f2f8f4',
+  solarized: '#fdf6e3',
+  slate: '#f8fafc',
+  modern: '#ffffff',
+};
+
 /**
  * Captures the exact rendered document canvas (matching the on-screen preview 1:1)
  * and downloads a high-fidelity A4 PDF file directly to the user's device.
@@ -40,15 +57,27 @@ export async function exportToPdfDirect(
 
   onProgress?.('Rendering exact visual pages...');
 
-  // Read the theme background color from the computed style of the element
+  // Determine exact theme background color
   let themeBg = '#ffffff';
-  try {
-    const computed = window.getComputedStyle(element);
-    if (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-      themeBg = computed.backgroundColor;
+  for (const [t, bg] of Object.entries(THEME_BACKGROUNDS)) {
+    if (element.classList.contains(`theme-${t}`)) {
+      themeBg = bg;
+      break;
     }
-  } catch {
-    // fallback
+  }
+  if (themeBg === '#ffffff') {
+    try {
+      const computed = window.getComputedStyle(element);
+      if (
+        computed.backgroundColor &&
+        computed.backgroundColor !== 'rgba(0, 0, 0, 0)' &&
+        computed.backgroundColor !== 'transparent'
+      ) {
+        themeBg = computed.backgroundColor;
+      }
+    } catch {
+      // fallback
+    }
   }
 
   const canvas = await html2canvas(element, {
@@ -58,41 +87,43 @@ export async function exportToPdfDirect(
     backgroundColor: themeBg,
     scrollX: 0,
     scrollY: 0,
-    x: 0,
-    y: 0,
+    windowWidth: 1200,
+    windowHeight: Math.max(element.scrollHeight, 1200) + 600,
     onclone: (clonedDoc, clonedElement) => {
-      // Ensure iframe window is scrolled to absolute top-left
-      if (clonedDoc.defaultView) {
-        clonedDoc.defaultView.scrollTo(0, 0);
+      // 1. Force all animations/transitions off and ensure opacity: 1
+      const overrideStyle = clonedDoc.createElement('style');
+      overrideStyle.textContent = `
+        *, *::before, *::after {
+          animation: none !important;
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+          transition: none !important;
+          transition-duration: 0s !important;
+        }
+        #${elementId}, #${elementId} * {
+          opacity: 1 !important;
+          filter: none !important;
+        }
+      `;
+      clonedDoc.head.appendChild(overrideStyle);
+
+      // 2. Remove animation classes from cloned element
+      if (clonedElement) {
+        clonedElement.classList.remove('animate-note-open');
+        clonedElement.style.opacity = '1';
+        clonedElement.style.transform = 'none';
+        clonedElement.style.animation = 'none';
+        clonedElement.style.filter = 'none';
       }
 
-      // Isolate clonedElement so it starts at exact (0, 0) in the cloned iframe
-      // This prevents scroll offset / navbar offset bugs that produce blank canvases!
-      const body = clonedDoc.body;
-      body.innerHTML = '';
-      body.style.margin = '0';
-      body.style.padding = '0';
-      body.style.backgroundColor = themeBg;
-      body.appendChild(clonedElement);
-
-      clonedElement.style.margin = '0';
-      clonedElement.style.position = 'static';
-      clonedElement.style.transform = 'none';
-      clonedElement.style.animation = 'none';
-      clonedElement.style.transition = 'none';
-      clonedElement.style.filter = 'none';
-      clonedElement.style.boxShadow = 'none';
-      clonedElement.style.width = '800px';
-      clonedElement.style.maxWidth = '800px';
-      clonedElement.classList.remove('animate-note-open');
-
-      // Also neutralize animations on child nodes
-      const animatedChildren = clonedElement.querySelectorAll(
-        '.animate-note-open, .animate-pulse, .animate-shimmer'
+      // 3. Remove animation classes from all child nodes
+      const animatedNodes = clonedDoc.querySelectorAll(
+        '.animate-note-open, .animate-pulse, .animate-shimmer, .animate-ping, .animate-spin'
       );
-      animatedChildren.forEach((child) => {
-        const el = child as HTMLElement;
+      animatedNodes.forEach((node) => {
+        const el = node as HTMLElement;
         el.style.animation = 'none';
+        el.style.opacity = '1';
         el.style.transform = 'none';
         el.style.filter = 'none';
       });
@@ -139,7 +170,7 @@ export async function exportToPdfDirect(
     const pageCtx = pageCanvas.getContext('2d');
 
     if (pageCtx) {
-      // Fill page with the exact theme background color (e.g. Midnight dark navy, Vintage cream, etc.)
+      // Fill page with the exact theme background color
       pageCtx.fillStyle = themeBg;
       pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
 
