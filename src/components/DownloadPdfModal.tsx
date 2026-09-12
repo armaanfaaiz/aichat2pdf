@@ -17,7 +17,7 @@ import {
 import { GeneratedNotes, CustomizationOptions } from '@/types';
 import {
   exportToPdfDirect,
-  generateDirectVectorPdf,
+  generatePublicationPdf,
   printDocument,
   triggerBlobDownload,
   PdfExportResult,
@@ -41,31 +41,30 @@ export function DownloadPdfModal({
   const [statusMsg, setStatusMsg] = useState('Preparing document...');
   const [result, setResult] = useState<PdfExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pdfType, setPdfType] = useState<'visual' | 'vector'>('visual');
+  const [pdfType, setPdfType] = useState<'vector' | 'visual'>('vector');
 
   const rawFilename = `${options.customTitle || notes.title || 'chatgpt-notes'}`
     .toLowerCase()
     .replace(/[^a-z0-9]/gi, '_');
 
-  const startExport = async (type: 'visual' | 'vector') => {
+  const startExport = async (type: 'vector' | 'visual') => {
     setIsGenerating(true);
     setError(null);
     setPdfType(type);
 
     try {
-      if (type === 'visual') {
-        setStatusMsg('Rendering exact visual theme & cards...');
+      if (type === 'vector') {
+        setStatusMsg('Generating HD Publication-Grade PDF with constant margins...');
+        await new Promise((r) => setTimeout(r, 60));
+        const res = generatePublicationPdf(notes, options, rawFilename);
+        setResult(res);
+      } else {
+        setStatusMsg('Rendering exact visual canvas capture...');
         const res = await exportToPdfDirect(
           'printable-document',
           rawFilename,
           (msg) => setStatusMsg(msg)
         );
-        setResult(res);
-      } else {
-        setStatusMsg('Compiling vector typography & layout...');
-        // Tiny timeout so UI updates
-        await new Promise((r) => setTimeout(r, 80));
-        const res = generateDirectVectorPdf(notes, options, rawFilename);
         setResult(res);
       }
 
@@ -79,10 +78,10 @@ export function DownloadPdfModal({
         // ignore
       }
     } catch (err: any) {
-      console.error('Visual export failed, trying vector fallback:', err);
+      console.error('PDF export error:', err);
       try {
-        setStatusMsg('Generating clean vector document...');
-        const res = generateDirectVectorPdf(notes, options, rawFilename);
+        setStatusMsg('Generating clean vector fallback...');
+        const res = generatePublicationPdf(notes, options, rawFilename);
         setResult(res);
         setPdfType('vector');
       } catch (fallbackErr: any) {
@@ -97,7 +96,7 @@ export function DownloadPdfModal({
     if (isOpen) {
       setResult(null);
       setError(null);
-      startExport('visual');
+      startExport('vector');
     }
   }, [isOpen]);
 
@@ -233,18 +232,6 @@ export function DownloadPdfModal({
                 <span>Rendering Mode:</span>
                 <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
                   <button
-                    onClick={() => startExport('visual')}
-                    disabled={isGenerating}
-                    className={`px-2.5 py-1 rounded-md font-medium text-[11px] transition flex items-center gap-1 ${
-                      pdfType === 'visual'
-                        ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Palette className="w-3 h-3" />
-                    <span>Visual Theme</span>
-                  </button>
-                  <button
                     onClick={() => startExport('vector')}
                     disabled={isGenerating}
                     className={`px-2.5 py-1 rounded-md font-medium text-[11px] transition flex items-center gap-1 ${
@@ -254,7 +241,19 @@ export function DownloadPdfModal({
                     }`}
                   >
                     <Zap className="w-3 h-3" />
-                    <span>Crisp Vector</span>
+                    <span>HD Vector (Exact Margins)</span>
+                  </button>
+                  <button
+                    onClick={() => startExport('visual')}
+                    disabled={isGenerating}
+                    className={`px-2.5 py-1 rounded-md font-medium text-[11px] transition flex items-center gap-1 ${
+                      pdfType === 'visual'
+                        ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Palette className="w-3 h-3" />
+                    <span>Visual Canvas</span>
                   </button>
                 </div>
               </div>

@@ -219,11 +219,35 @@ body {
     margin: 14mm 14mm 14mm 14mm;
   }
 
+  html, body {
+    background: white !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  main,
+  section#studio-preview,
+  .animate-note-open,
+  div:has(> #printable-document),
+  div:has(> * > #printable-document) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    position: static !important;
+  }
+
   .no-print,
   nav,
   aside,
   header,
-  footer,
+  footer:not(#printable-document footer),
   .export-toolbar,
   .studio-sidebar,
   .hero-input-section,
@@ -236,10 +260,14 @@ body {
     display: block !important;
     position: static !important;
     width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
   }
 
   .page-break-before {
