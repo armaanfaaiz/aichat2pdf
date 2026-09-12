@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { GeneratedNotes, CustomizationOptions } from '@/types';
 import {
-  exportToPdfDirect,
+  exportToExactPreviewPdf,
   generatePublicationPdf,
   printDocument,
   triggerBlobDownload,
@@ -41,41 +41,43 @@ export function DownloadPdfModal({
   const [statusMsg, setStatusMsg] = useState('Preparing document...');
   const [result, setResult] = useState<PdfExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pdfType, setPdfType] = useState<'vector' | 'visual'>('vector');
+  const [pdfType, setPdfType] = useState<'exact' | 'vector'>('exact');
 
   const rawFilename = `${options.customTitle || notes.title || 'chatgpt-notes'}`
     .toLowerCase()
     .replace(/[^a-z0-9]/gi, '_');
 
-  const startExport = async (type: 'vector' | 'visual') => {
+  const startExport = async (type: 'exact' | 'vector') => {
     setIsGenerating(true);
     setError(null);
     setPdfType(type);
 
-    const isLargeDoc =
-      (notes.qaBreakdown && notes.qaBreakdown.length > 10) ||
-      (notes.rawTranscript && notes.rawTranscript.length > 15) ||
-      (notes.wordCount && notes.wordCount > 3000);
+    const docEl = typeof document !== 'undefined' ? document.getElementById('printable-document') : null;
+    const isVeryLarge =
+      (docEl && docEl.scrollHeight > 14000) ||
+      (notes.qaBreakdown && notes.qaBreakdown.length > 25) ||
+      (notes.rawTranscript && notes.rawTranscript.length > 30);
 
     try {
-      if (type === 'vector' || isLargeDoc) {
-        if (isLargeDoc && type === 'visual') {
-          setStatusMsg('Multi-page document detected (up to 250+ pages). Using Vector Engine to guarantee zero blank pages...');
-        } else {
-          setStatusMsg('Generating HD Publication-Grade PDF with constant margins...');
-        }
-        await new Promise((r) => setTimeout(r, 60));
-        const res = generatePublicationPdf(notes, options, rawFilename);
-        setResult(res);
-        setPdfType('vector');
-      } else {
-        setStatusMsg('Rendering exact visual canvas capture...');
-        const res = await exportToPdfDirect(
+      if (type === 'exact' && !isVeryLarge) {
+        setStatusMsg('Rendering exact HD pages (100% same as preview)...');
+        const res = await exportToExactPreviewPdf(
           'printable-document',
           rawFilename,
           (msg) => setStatusMsg(msg)
         );
         setResult(res);
+        setPdfType('exact');
+      } else {
+        if (isVeryLarge && type === 'exact') {
+          setStatusMsg('Ultra-large document detected (250+ pages). Using Vector Engine for instant generation with zero blank pages...');
+        } else {
+          setStatusMsg('Generating Publication-Grade Vector PDF with constant margins...');
+        }
+        await new Promise((r) => setTimeout(r, 60));
+        const res = generatePublicationPdf(notes, options, rawFilename);
+        setResult(res);
+        setPdfType('vector');
       }
 
       try {
@@ -106,7 +108,7 @@ export function DownloadPdfModal({
     if (isOpen) {
       setResult(null);
       setError(null);
-      startExport('vector');
+      startExport('exact');
     }
   }, [isOpen]);
 
@@ -196,7 +198,7 @@ export function DownloadPdfModal({
                       {result.filename}
                     </span>
                     <span className="text-[11px] text-slate-500">
-                      {result.totalPages} {result.totalPages === 1 ? 'Page' : 'Pages'} &bull; A4 Portrait &bull; {pdfType === 'visual' ? 'Exact Preview Theme' : 'Vector Typography'}
+                      {result.totalPages} {result.totalPages === 1 ? 'Page' : 'Pages'} &bull; A4 Portrait &bull; {pdfType === 'exact' ? 'Exact Preview (HD)' : 'Vector Typography'}
                     </span>
                   </div>
                 </div>
@@ -239,8 +241,20 @@ export function DownloadPdfModal({
 
               {/* Format Engine Switcher */}
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <span>Rendering Mode:</span>
+                <span>Rendering Engine:</span>
                 <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+                  <button
+                    onClick={() => startExport('exact')}
+                    disabled={isGenerating}
+                    className={`px-2.5 py-1 rounded-md font-medium text-[11px] transition flex items-center gap-1 ${
+                      pdfType === 'exact'
+                        ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3 text-indigo-500" />
+                    <span>Exact Preview (HD)</span>
+                  </button>
                   <button
                     onClick={() => startExport('vector')}
                     disabled={isGenerating}
@@ -250,20 +264,8 @@ export function DownloadPdfModal({
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <Zap className="w-3 h-3" />
-                    <span>HD Vector (Exact Margins)</span>
-                  </button>
-                  <button
-                    onClick={() => startExport('visual')}
-                    disabled={isGenerating}
-                    className={`px-2.5 py-1 rounded-md font-medium text-[11px] transition flex items-center gap-1 ${
-                      pdfType === 'visual'
-                        ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Palette className="w-3 h-3" />
-                    <span>Visual Canvas</span>
+                    <Zap className="w-3 h-3 text-amber-500" />
+                    <span>Fast Vector (250+ Pages)</span>
                   </button>
                 </div>
               </div>
