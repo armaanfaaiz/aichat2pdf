@@ -11,7 +11,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { GeneratedNotes, CustomizationOptions } from '@/types';
-import { printDocument, exportToPdfDirect } from '@/lib/pdf-exporter';
+import { printDocument, exportToPdfDirect, generateDirectTextPdf } from '@/lib/pdf-exporter';
 import { convertNotesToMarkdown, downloadFile } from '@/lib/markdown-exporter';
 import confetti from 'canvas-confetti';
 
@@ -44,22 +44,37 @@ export function ExportToolbar({ notes, options }: ExportToolbarProps) {
 
   const handleDirectPdf = async () => {
     setIsExportingPdf(true);
-    setStatusMsg('Preparing PDF...');
+    setStatusMsg('Downloading PDF...');
     try {
       const filename = `${options.customTitle || notes.title || 'chatgpt-notes'}.pdf`
         .toLowerCase()
         .replace(/[^a-z0-9]/gi, '_');
-      await exportToPdfDirect('printable-document', filename, (msg) => setStatusMsg(msg));
+
+      try {
+        await exportToPdfDirect('printable-document', filename, (msg) => setStatusMsg(msg));
+      } catch (canvasErr) {
+        console.warn('Canvas PDF encountered an issue, generating via direct PDF engine:', canvasErr);
+        setStatusMsg('Generating direct PDF...');
+        generateDirectTextPdf(notes, options, filename);
+      }
+
       triggerConfetti();
       setStatusMsg('Downloaded!');
       setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) {
       console.error('Direct PDF export error:', err);
-      setStatusMsg('Opening print dialog fallback...');
-      setTimeout(() => {
-        printDocument();
-        setStatusMsg(null);
-      }, 800);
+      // Fallback to text generator so a file is ALWAYS downloaded
+      try {
+        const filename = `${options.customTitle || notes.title || 'chatgpt-notes'}.pdf`
+          .toLowerCase()
+          .replace(/[^a-z0-9]/gi, '_');
+        generateDirectTextPdf(notes, options, filename);
+        triggerConfetti();
+        setStatusMsg('Downloaded!');
+        setTimeout(() => setStatusMsg(null), 3000);
+      } catch (finalErr) {
+        alert('Could not download PDF: ' + (err?.message || 'Unknown error'));
+      }
     } finally {
       setIsExportingPdf(false);
     }
@@ -100,26 +115,26 @@ export function ExportToolbar({ notes, options }: ExportToolbarProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {/* Recommended Print / Save Vector PDF */}
-        <button
-          onClick={handlePrint}
-          className="relative group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95"
-          title="Best quality vector PDF with native browser engine"
-        >
-          <Printer className="w-4 h-4" />
-          <span>Save PDF</span>
-          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-sm bg-white/20 font-mono tracking-wider">Vector</span>
-        </button>
-
-        {/* Fallback Direct Client PDF */}
+        {/* Direct PDF Download (Saves directly to user device without printer dialog) */}
         <button
           onClick={handleDirectPdf}
           disabled={isExportingPdf}
-          className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold text-xs border border-slate-700/60 transition active:scale-95 disabled:opacity-50"
-          title="Direct raster download without print dialog"
+          className="relative group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95 disabled:opacity-50"
+          title="Directly download .pdf file to your device without printer dialog"
         >
-          {isExportingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" /> : <Download className="w-3.5 h-3.5 text-slate-400" />}
+          {isExportingPdf ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Download className="w-4 h-4" />}
           <span>Direct PDF</span>
+          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-sm bg-white/20 font-mono tracking-wider">Download</span>
+        </button>
+
+        {/* System Print / Vector Dialog */}
+        <button
+          onClick={handlePrint}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold text-xs border border-slate-700/60 transition active:scale-95"
+          title="Open system printer dialog (Vector PDF)"
+        >
+          <Printer className="w-3.5 h-3.5 text-slate-400" />
+          <span>Printer View</span>
         </button>
 
         {/* Download MD */}
