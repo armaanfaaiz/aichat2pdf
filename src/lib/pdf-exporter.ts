@@ -97,6 +97,71 @@ export async function exportToExactPreviewPdf(
   };
 }
 
+/**
+ * Official iLovePDF Cloud Vector PDF Exporter.
+ * Converts the live DOM directly via @ilovepdf/ilovepdf-nodejs into
+ * a 100% Ultra-HD vector PDF with crystal-clear typography.
+ */
+export async function exportViaILovePdfApi(
+  elementId: string,
+  filename: string,
+  keys?: { publicKey?: string; secretKey?: string },
+  onProgress?: (status: string) => void
+): Promise<PdfExportResult> {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    throw new Error(`Element #${elementId} not found`);
+  }
+
+  onProgress?.('Connecting to iLovePDF cloud engine...');
+
+  const cleanFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+
+  // Clone element and strip buttons or scripts
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll('.no-print, button, script').forEach((el) => el.remove());
+
+  onProgress?.('Uploading document to iLovePDF API...');
+
+  const response = await fetch('/api/pdf/ilovepdf', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      html: clone.outerHTML,
+      filename: cleanFilename,
+      publicKey: keys?.publicKey,
+      secretKey: keys?.secretKey,
+      pageSize: 'A4',
+      pageMargin: 12,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    if (errorData.missingKeys) {
+      throw new Error(
+        errorData.message ||
+          'iLovePDF API keys missing. Please provide your Public and Secret keys or use HD Vector PDF.'
+      );
+    }
+    throw new Error(errorData.error || 'Failed to generate PDF via iLovePDF API');
+  }
+
+  onProgress?.('Downloading high-definition vector PDF from iLovePDF...');
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  triggerBlobDownload(blob, cleanFilename);
+
+  return {
+    blob,
+    blobUrl,
+    filename: cleanFilename,
+    totalPages: 0,
+  };
+}
+
 export interface PdfExportResult {
   blob: Blob;
   blobUrl: string;

@@ -10,6 +10,7 @@
     "postinstall": "node scripts/patch-html2canvas.js"
   },
   "dependencies": {
+    "@ilovepdf/ilovepdf-nodejs": "^0.3.1",
     "@vercel/analytics": "^2.0.1",
     "canvas-confetti": "^1.9.4",
     "html2canvas": "^1.4.1",
