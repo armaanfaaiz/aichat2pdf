@@ -40,7 +40,7 @@ export async function exportToExactPreviewPdf(
   onProgress?.('Rendering exact preview in Ultra-HD...');
 
   const opt = {
-    margin: [10, 10, 14, 10] as [number, number, number, number],
+    margin: [10, 10, 10, 10] as [number, number, number, number],
     filename: cleanFilename,
     image: { type: 'jpeg' as const, quality: 0.98 },
     enableLinks: true,
@@ -82,43 +82,7 @@ export async function exportToExactPreviewPdf(
     },
   };
 
-  let totalPages = 1;
-
-  const worker = (html2pdf as any)()
-    .set(opt)
-    .from(element)
-    .toPdf()
-    .get('pdf')
-    .then((pdf: any) => {
-      totalPages =
-        (typeof pdf.getNumberOfPages === 'function'
-          ? pdf.getNumberOfPages()
-          : pdf.internal?.getNumberOfPages?.()) || 1;
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      for (let i = 1; i <= totalPages; i++) {
-        pdf.setPage(i);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(8);
-        pdf.setTextColor(148, 163, 184);
-
-        // Footer divider line
-        pdf.setDrawColor(226, 232, 240);
-        pdf.setLineWidth(0.2);
-        pdf.line(10, pageHeight - 10, pageWidth - 10, pageHeight - 10);
-
-        // Left branding
-        pdf.text('Generated with ChatPDF AI Notes Studio', 10, pageHeight - 5.5);
-
-        // Right running page number (e.g. Page 1 of 5)
-        pdf.text(`Page ${i} of ${totalPages}`, pageWidth - 10, pageHeight - 5.5, {
-          align: 'right',
-        });
-      }
-    });
-
+  const worker = (html2pdf as any)().set(opt).from(element);
   const pdfBlob: Blob = await worker.output('blob');
 
   onProgress?.('Finalizing PDF download...');
@@ -129,7 +93,7 @@ export async function exportToExactPreviewPdf(
     blob: pdfBlob,
     blobUrl,
     filename: cleanFilename,
-    totalPages,
+    totalPages: 0,
   };
 }
 
@@ -885,11 +849,6 @@ export function generatePublicationPdf(
     pdf.setFontSize(8);
     pdf.setTextColor(palette.textMuted[0], palette.textMuted[1], palette.textMuted[2]);
     pdf.text('Generated with ChatPDF Notes Studio', marginX, pageHeight - 7);
-
-    // Right page number
-    pdf.text(`Page ${p} of ${totalPages}`, pageWidth - marginX, pageHeight - 7, {
-      align: 'right',
-    });
   }
 
   const finalFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
@@ -1034,7 +993,7 @@ export async function exportToPdfDirect(
       const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
       pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfWidthMm, pdfHeightMm, undefined, 'FAST');
 
-      // Footer divider line and running page number
+      // Footer divider line
       pdf.setDrawColor(226, 232, 240);
       pdf.setLineWidth(0.2);
       pdf.line(10, pdfHeightMm - 10, pdfWidthMm - 10, pdfHeightMm - 10);
@@ -1042,9 +1001,6 @@ export async function exportToPdfDirect(
       pdf.setFontSize(8);
       pdf.setTextColor(148, 163, 184);
       pdf.text('Generated with ChatPDF AI Notes Studio', 10, pdfHeightMm - 5.5);
-      pdf.text(`Page ${page + 1} of ${totalPages}`, pdfWidthMm - 10, pdfHeightMm - 5.5, {
-        align: 'right',
-      });
     }
   }
 

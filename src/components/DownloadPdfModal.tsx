@@ -198,7 +198,7 @@ export function DownloadPdfModal({
                       {result.filename}
                     </span>
                     <span className="text-[11px] text-slate-500">
-                      {result.totalPages} {result.totalPages === 1 ? 'Page' : 'Pages'} &bull; A4 Portrait &bull; {pdfType === 'exact' ? 'Exact Preview (HD)' : 'Vector Typography'}
+                      A4 Portrait &bull; {pdfType === 'exact' ? 'Exact Preview (HD)' : 'Vector Typography'}
                     </span>
                   </div>
                 </div>
