@@ -3,26 +3,22 @@
 import React, { useState } from 'react';
 import {
   Printer,
-  Download,
   FileCode2,
   Copy,
   Check,
   Sparkles,
-  Loader2,
 } from 'lucide-react';
 import { GeneratedNotes, CustomizationOptions } from '@/types';
-import { printDocument, generatePublicationPdf } from '@/lib/pdf-exporter';
+import { printDocument } from '@/lib/pdf-exporter';
 import { convertNotesToMarkdown, downloadFile } from '@/lib/markdown-exporter';
 import confetti from 'canvas-confetti';
 
 interface ExportToolbarProps {
   notes: GeneratedNotes;
   options: CustomizationOptions;
-  onOpenDownloadModal?: () => void;
 }
 
-export function ExportToolbar({ notes, options, onOpenDownloadModal }: ExportToolbarProps) {
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
+export function ExportToolbar({ notes, options }: ExportToolbarProps) {
   const [copiedMd, setCopiedMd] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
@@ -40,33 +36,9 @@ export function ExportToolbar({ notes, options, onOpenDownloadModal }: ExportToo
 
   const handlePrint = () => {
     triggerConfetti();
+    setStatusMsg('Opening printer view...');
     printDocument();
-  };
-
-  const handleDirectPdf = async () => {
-    if (onOpenDownloadModal) {
-      onOpenDownloadModal();
-      return;
-    }
-    setIsExportingPdf(true);
-    setStatusMsg('Downloading PDF...');
-    try {
-      const filename = `${options.customTitle || notes.title || 'chatgpt-notes'}.pdf`
-        .toLowerCase()
-        .replace(/[^a-z0-9]/gi, '_');
-
-      generatePublicationPdf(notes, options, filename);
-
-      triggerConfetti();
-      setStatusMsg('Downloaded!');
-      setTimeout(() => setStatusMsg(null), 3000);
-    } catch (err: any) {
-      console.error('Direct PDF export error:', err);
-      setStatusMsg('Download failed');
-      setTimeout(() => setStatusMsg(null), 3000);
-    } finally {
-      setIsExportingPdf(false);
-    }
+    setTimeout(() => setStatusMsg(null), 3000);
   };
 
   const handleDownloadMarkdown = () => {
@@ -98,32 +70,21 @@ export function ExportToolbar({ notes, options, onOpenDownloadModal }: ExportToo
         </div>
         <div>
           <span className="font-bold text-slate-200 block text-xs">Ready to Export</span>
-          <span className="text-[10px] text-slate-400 font-medium">Vector PDF & Markdown ready</span>
+          <span className="text-[10px] text-slate-400 font-medium">HD Printer View &bull; Markdown ready</span>
         </div>
         {statusMsg && <span className="text-cyan-300 font-mono text-[11px] animate-pulse ml-1">({statusMsg})</span>}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {/* Direct PDF Download (Saves directly to user device without printer dialog) */}
-        <button
-          onClick={handleDirectPdf}
-          disabled={isExportingPdf}
-          className="relative group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95 disabled:opacity-50"
-          title="Directly download .pdf file to your device without printer dialog"
-        >
-          {isExportingPdf ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Download className="w-4 h-4" />}
-          <span>Direct PDF</span>
-          <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-sm bg-white/20 font-mono tracking-wider">Download</span>
-        </button>
-
-        {/* System Print / Vector Dialog */}
+        {/* Single Primary Export: Printer View (High-Definition PDF) */}
         <button
           onClick={handlePrint}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold text-xs border border-slate-700/60 transition active:scale-95"
-          title="Open system printer dialog (Vector PDF)"
+          className="relative group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/30 transition-all transform active:scale-95 cursor-pointer"
+          title="Open printer view to print or save as high-definition PDF"
         >
-          <Printer className="w-3.5 h-3.5 text-slate-400" />
+          <Printer className="w-4 h-4" />
           <span>Printer View</span>
+          <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-white/20 font-mono tracking-wider font-semibold">Save as PDF</span>
         </button>
 
         {/* Download MD */}

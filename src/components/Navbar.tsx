@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Sparkles, BookOpen, ClipboardPaste, Download } from 'lucide-react';
+import { FileText, Sparkles, BookOpen, ClipboardPaste, Printer } from 'lucide-react';
 import { DEMO_CONVERSATIONS } from '@/lib/demo-data';
 import { ConversationData } from '@/types';
 
@@ -8,7 +8,6 @@ interface NavbarProps {
   onOpenPasteModal: () => void;
   hasDocument: boolean;
   onPrint: () => void;
-  onDownloadPdf?: () => void;
 }
 
 export function Navbar({
@@ -16,7 +15,6 @@ export function Navbar({
   onOpenPasteModal,
   hasDocument,
   onPrint,
-  onDownloadPdf,
 }: NavbarProps) {
   return (
     <nav className="no-print sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-xl transition-all shadow-xs">
@@ -85,15 +83,15 @@ export function Navbar({
             <span className="hidden sm:inline">Paste Text / File</span>
           </button>
 
-          {/* Quick Download / Save PDF Button */}
+          {/* Primary Print / Save PDF via Printer View */}
           {hasDocument && (
             <button
-              onClick={onDownloadPdf || onPrint}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition active:scale-95"
-              title="Download PDF to device"
+              onClick={onPrint}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition active:scale-95 cursor-pointer"
+              title="Print or Save PDF via printer view"
             >
-              <Download className="w-4 h-4" />
-              <span>Save PDF</span>
+              <Printer className="w-4 h-4" />
+              <span>Printer View</span>
             </button>
           )}
         </div>

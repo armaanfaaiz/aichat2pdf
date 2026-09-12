@@ -8,7 +8,6 @@ import { DocumentRenderer } from '@/components/DocumentRenderer';
 import { ViewSwitcher } from '@/components/ViewSwitcher';
 import { ExportToolbar } from '@/components/ExportToolbar';
 import { PasteModal } from '@/components/PasteModal';
-import { DownloadPdfModal } from '@/components/DownloadPdfModal';
 import { SeoContentSection } from '@/components/SeoContentSection';
 import { DEMO_CONVERSATIONS } from '@/lib/demo-data';
 import { generateStructuredNotes } from '@/lib/note-generator';
@@ -19,7 +18,6 @@ export default function Home() {
   const [conversation, setConversation] = useState<ConversationData>(DEMO_CONVERSATIONS[0]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
-  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   // Ensure document stays strictly in white mode
   useEffect(() => {
@@ -85,7 +83,6 @@ export default function Home() {
         onOpenPasteModal={() => setIsPasteModalOpen(true)}
         hasDocument={!!generatedNotes}
         onPrint={printDocument}
-        onDownloadPdf={() => setIsDownloadModalOpen(true)}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
@@ -135,7 +132,6 @@ export default function Home() {
         <ExportToolbar
           notes={generatedNotes}
           options={options}
-          onOpenDownloadModal={() => setIsDownloadModalOpen(true)}
         />
       )}
 
@@ -144,15 +140,6 @@ export default function Home() {
         onClose={() => setIsPasteModalOpen(false)}
         onLoadConversation={handleLoadConversation}
       />
-
-      {generatedNotes && (
-        <DownloadPdfModal
-          isOpen={isDownloadModalOpen}
-          onClose={() => setIsDownloadModalOpen(false)}
-          notes={generatedNotes}
-          options={options}
-        />
-      )}
     </div>
   );
 }

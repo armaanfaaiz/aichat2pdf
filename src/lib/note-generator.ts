@@ -47,7 +47,10 @@ export function generateStructuredNotes(conversation: ConversationData): Generat
       });
 
   const userMessages = sanitizedMessages.filter((m) => m.role === 'user');
-  const assistantMessages = sanitizedMessages.filter((m) => m.role === 'assistant');
+  let assistantMessages = sanitizedMessages.filter((m) => m.role === 'assistant');
+  if (assistantMessages.length === 0 && sanitizedMessages.length > 0) {
+    assistantMessages = sanitizedMessages;
+  }
 
   // 1. Executive Summary Synthesis
   const executiveSummary = synthesizeExecutiveSummary(title, userMessages, assistantMessages);
@@ -107,23 +110,32 @@ function synthesizeExecutiveSummary(
   userMsgs: ChatMessage[],
   assistantMsgs: ChatMessage[]
 ): string {
-  if (assistantMsgs.length === 0) {
+  const effectiveMsgs = assistantMsgs.length > 0 ? assistantMsgs : userMsgs;
+  if (effectiveMsgs.length === 0) {
     return `This document captures key technical explorations and notes on ${title}.`;
   }
 
-  const firstAssistant = assistantMsgs[0].content;
-  const cleanParagraphs = firstAssistant
-    .split(/\n\n+/)
-    .map((p) => sanitizeChatGPTText(p.replace(/^[#*`_ \t]+/, '').trim()))
-    .filter((p) => p.length > 40 && !p.startsWith('|') && !p.startsWith('-'));
+  for (const msg of effectiveMsgs) {
+    const cleanParagraphs = msg.content
+      .split(/\n\n+/)
+      .map((p) => sanitizeChatGPTText(p.replace(/^[#*`_ \t]+/, '').trim()))
+      .filter(
+        (p) =>
+          p.length > 40 &&
+          !p.startsWith('|') &&
+          !p.startsWith('-') &&
+          !p.toLowerCase().includes('executive summary') &&
+          !p.toLowerCase().includes('key takeaways')
+      );
 
-  if (cleanParagraphs.length > 0) {
-    const summary = cleanParagraphs[0];
-    return summary.length > 340 ? summary.substring(0, 335) + '...' : summary;
+    if (cleanParagraphs.length > 0) {
+      const summary = cleanParagraphs[0];
+      return summary.length > 340 ? summary.substring(0, 335) + '...' : summary;
+    }
   }
 
   const userGoal = userMsgs.length > 0 ? userMsgs[0].content.split('\n')[0].slice(0, 150) : title;
-  return `This briefing synthesizes key information regarding "${title}". The notes detail essential concepts, important dates, eligibility, core patterns, and exam structure discussed in: "${userGoal}".`;
+  return `This briefing synthesizes key information regarding "${title}". The notes detail essential concepts, important patterns, and structured topics.`;
 }
 
 /**
@@ -163,8 +175,8 @@ function extractKeyTakeaways(assistantMsgs: ChatMessage[], topicTitle: string): 
   if (takeaways.length < 3) {
     takeaways.push(
       `Clarified fundamental criteria and essential requirements for ${topicTitle}.`,
-      `Identified critical dates, selection phases, and preparation checkpoints.`,
-      `Structured key patterns and reference details for quick review.`
+      `Identified critical principles, architecture patterns, and key checkpoints.`,
+      `Structured reference details and core specifications for quick review.`
     );
   }
 
@@ -172,19 +184,46 @@ function extractKeyTakeaways(assistantMsgs: ChatMessage[], topicTitle: string): 
 }
 
 /**
- * Groups user queries with assistant responses into structured Q&A sections
+ * Groups user queries with assistant responses into structured Q&A / Topic sections.
+ * Automatically decomposes multi-topic structured answers into clean individual topic items.
  */
 function buildQABreakdown(messages: ChatMessage[]): QABreakdownItem[] {
   const items: QABreakdownItem[] = [];
+  let itemIndex = 1;
+
+  // 1. Check if the conversation contains structured markdown headings across any turn
+  const allText = messages.map((m) => m.content).join('\n\n');
+  const globalSubtopics = splitMultiTopicAnswer('Detailed Topic Overview & Breakdown', allText, 1);
+  if (globalSubtopics && globalSubtopics.length > 1) {
+    return globalSubtopics;
+  }
+
+  // 2. Otherwise, match user queries with assistant responses
   let currentQuestion = '';
   let currentAnswerParts: string[] = [];
-  let itemIndex = 1;
+
+  const pushQAOrSubtopics = (question: string, answer: string) => {
+    const subtopics = splitMultiTopicAnswer(question, answer, itemIndex);
+    if (subtopics && subtopics.length > 1) {
+      for (const st of subtopics) {
+        items.push(st);
+        itemIndex++;
+      }
+    } else {
+      items.push(formatQAItem(question, answer, itemIndex++));
+    }
+  };
+
+  const hasAssistant = messages.some((m) => m.role === 'assistant');
+  if (!hasAssistant) {
+    return [formatQAItem('Detailed Topic Overview & Breakdown', allText, 1)];
+  }
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
     if (msg.role === 'user') {
       if (currentQuestion && currentAnswerParts.length > 0) {
-        items.push(formatQAItem(currentQuestion, currentAnswerParts.join('\n\n'), itemIndex++));
+        pushQAOrSubtopics(currentQuestion, currentAnswerParts.join('\n\n'));
         currentAnswerParts = [];
       }
       currentQuestion = sanitizeChatGPTText(msg.content.replace(/^[#*`_\s]+/, '').trim());
@@ -194,12 +233,57 @@ function buildQABreakdown(messages: ChatMessage[]): QABreakdownItem[] {
   }
 
   if (currentQuestion && currentAnswerParts.length > 0) {
-    items.push(formatQAItem(currentQuestion, currentAnswerParts.join('\n\n'), itemIndex++));
+    pushQAOrSubtopics(currentQuestion, currentAnswerParts.join('\n\n'));
   } else if (currentAnswerParts.length > 0 && items.length === 0) {
-    items.push(formatQAItem('Detailed Topic Overview & Breakdown', currentAnswerParts.join('\n\n'), 1));
+    pushQAOrSubtopics('Detailed Topic Overview & Breakdown', currentAnswerParts.join('\n\n'));
+  } else if (items.length === 0 && messages.length > 0) {
+    items.push(formatQAItem('Detailed Topic Overview & Breakdown', allText, 1));
   }
 
   return items;
+}
+
+/**
+ * Decomposes long multi-topic responses (e.g. lectures with # 1. What is HTTP?, # 2. ...)
+ * into individual topic cards.
+ */
+function splitMultiTopicAnswer(
+  mainQuestion: string,
+  rawAnswer: string,
+  startIndex: number
+): QABreakdownItem[] | null {
+  const sectionSplitter = /(?:^|\n)(?=#{1,2}\s+(?:\d+[\.:\)]\s*)?[A-Z0-9])/;
+  const rawSections = rawAnswer.split(sectionSplitter).filter((s) => s.trim().length > 0);
+
+  if (rawSections.length <= 1) return null;
+
+  const items: QABreakdownItem[] = [];
+  let idx = startIndex;
+
+  for (const sec of rawSections) {
+    const trimmed = sec.trim();
+    const lines = trimmed.split('\n');
+    const headerMatch = lines[0].match(/^#{1,3}\s+(?:\d+[\.:\)]\s*)?([^\n]+)/);
+
+    if (headerMatch) {
+      const topicTitle = headerMatch[1].trim().replace(/^[*_`#]+|[*_`#]+$/g, '').trim();
+      const topicBody = lines.slice(1).join('\n').trim();
+      if (topicBody.length > 0 || topicTitle.length > 0) {
+        items.push(formatQAItem(topicTitle, topicBody || topicTitle, idx++));
+      }
+    } else {
+      // Preamble or introductory context
+      if (trimmed.length > 25) {
+        const title =
+          mainQuestion.length > 10 && mainQuestion.length < 80
+            ? mainQuestion
+            : 'Overview & Fundamentals';
+        items.push(formatQAItem(title, trimmed, idx++));
+      }
+    }
+  }
+
+  return items.length > 1 ? items : null;
 }
 
 function formatQAItem(question: string, rawAnswer: string, idx: number): QABreakdownItem {
@@ -207,7 +291,7 @@ function formatQAItem(question: string, rawAnswer: string, idx: number): QABreak
   const primaryCode = codeBlocks.length > 0 ? codeBlocks[0].code : undefined;
   const primaryLang = codeBlocks.length > 0 ? codeBlocks[0].language : undefined;
 
-  // Extract key bullet points
+  // Extract key bullet points for highlight box
   const keyPoints: string[] = [];
   const lines = rawAnswer.split('\n');
   for (const line of lines) {
@@ -221,28 +305,32 @@ function formatQAItem(question: string, rawAnswer: string, idx: number): QABreak
         keyPoints.push(simpleBullet[1]);
       }
     }
-    if (keyPoints.length >= 5) break;
+    if (keyPoints.length >= 4) break;
   }
 
-  // Answer text
-  const cleanedAnswer = rawAnswer
-    .replace(/```[a-zA-Z0-9_\-\+]*\n[\s\S]*?```/g, '')
+  // Answer text: preserve all code blocks and markdown content in place
+  const cleanedAnswer = rawAnswer.trim();
+
+  let displayQuestion = question
+    .replace(/^#{1,3}\s+/, '')
+    .replace(/^Q\d*[:\.]\s*/i, '')
+    .replace(/^Question\s*\d*[:\.]\s*/i, '')
     .trim();
 
-  let displayQuestion = question;
   if (displayQuestion.length > 120) {
     const firstSentence = displayQuestion.split(/[.?!\n]/)[0];
-    displayQuestion = firstSentence.length > 20 ? firstSentence : displayQuestion.substring(0, 115) + '...';
+    displayQuestion =
+      firstSentence.length > 20 ? firstSentence : displayQuestion.substring(0, 115) + '...';
   }
 
   return {
     id: `qa-${idx}`,
-    question: displayQuestion,
-    answer: cleanedAnswer || rawAnswer,
+    question: displayQuestion || `Section ${idx}`,
+    answer: cleanedAnswer,
     code: primaryCode,
     language: primaryLang,
     keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
-    tag: `Section ${idx}`,
+    tag: `Topic ${idx}`,
   };
 }
 

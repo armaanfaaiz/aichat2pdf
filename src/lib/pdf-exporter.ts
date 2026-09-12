@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { GeneratedNotes, CustomizationOptions, ThemeStyle } from '@/types';
+import { cleanForPdfVector } from '@/lib/sanitize';
 
 /**
  * Triggers native browser print dialog directly.
@@ -42,10 +43,10 @@ export async function exportToExactPreviewPdf(
   const opt = {
     margin: [10, 10, 10, 10] as [number, number, number, number],
     filename: cleanFilename,
-    image: { type: 'jpeg' as const, quality: 0.98 },
+    image: { type: 'jpeg' as const, quality: 1.0 },
     enableLinks: true,
     html2canvas: {
-      scale: 2.2,
+      scale: 2.5,
       useCORS: true,
       logging: false,
       scrollX: 0,
@@ -66,6 +67,18 @@ export async function exportToExactPreviewPdf(
             opacity: 1 !important;
             filter: none !important;
           }
+          .qa-card, .transcript-turn {
+            break-inside: auto !important;
+            page-break-inside: auto !important;
+          }
+          .avoid-break, pre, tr, .quiz-card, .glossary-card {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+          .section-header, h1, h2, h3 {
+            break-after: avoid !important;
+            page-break-after: avoid !important;
+          }
         `;
         clonedDoc.head.appendChild(style);
       },
@@ -77,8 +90,8 @@ export async function exportToExactPreviewPdf(
       compress: true,
     },
     pagebreak: {
-      mode: ['avoid-all', 'css', 'legacy'],
-      avoid: ['.avoid-break', '.section-header', 'h1', 'h2', 'h3', 'pre', 'code', 'tr'],
+      mode: ['css', 'legacy'],
+      avoid: ['.avoid-break', '.section-header', 'h1', 'h2', 'h3', 'pre', 'tr', '.quiz-card', '.glossary-card'],
     },
   };
 
@@ -456,6 +469,212 @@ export function generatePublicationPdf(
     y += 3;
   };
 
+  const printMarkdownTable = (tableLines: string[], startX: number, boxWidth: number) => {
+    const rows: string[][] = [];
+    for (const line of tableLines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        if (/^\|[\s\-:|]+\|$/.test(trimmed)) continue;
+        const cols = trimmed
+          .slice(1, -1)
+          .split('|')
+          .map((c) => cleanForPdfVector(c).replace(/\*\*/g, '').trim());
+        if (cols.length > 0) rows.push(cols);
+      }
+    }
+    if (rows.length === 0) return;
+
+    const numCols = Math.max(...rows.map((r) => r.length));
+    if (numCols === 0) return;
+
+    // Proportional column widths
+    const colWidths: number[] = [];
+    if (numCols === 2) {
+      colWidths.push(boxWidth * 0.34, boxWidth * 0.66);
+    } else if (numCols === 3) {
+      colWidths.push(boxWidth * 0.28, boxWidth * 0.36, boxWidth * 0.36);
+    } else {
+      const w = boxWidth / numCols;
+      for (let c = 0; c < numCols; c++) colWidths.push(w);
+    }
+
+    checkPageBreak(16);
+
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      const isHeader = r === 0;
+
+      // Calculate row height based on max wrapped lines across cells
+      const cellLines = row.map((cell, cIdx) => {
+        const w = colWidths[cIdx] || boxWidth / numCols;
+        pdf.setFont('helvetica', isHeader ? 'bold' : 'normal');
+        pdf.setFontSize(isHeader ? 8.5 : 8);
+        return pdf.splitTextToSize(cell, w - 4);
+      });
+
+      const maxLinesInRow = Math.max(1, ...cellLines.map((cl) => cl.length));
+      const rowHeight = Math.max(maxLinesInRow * 3.8 + 3.2, 6.5);
+
+      checkPageBreak(rowHeight + 2);
+
+      // Row background
+      if (isHeader) {
+        pdf.setFillColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.rect(startX, y, boxWidth, rowHeight, 'F');
+      } else if (r % 2 === 1) {
+        pdf.setFillColor(248, 250, 252);
+        pdf.rect(startX, y, boxWidth, rowHeight, 'F');
+      } else {
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(startX, y, boxWidth, rowHeight, 'F');
+      }
+
+      // Border outline
+      pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
+      pdf.setLineWidth(0.2);
+      pdf.rect(startX, y, boxWidth, rowHeight, 'S');
+
+      // Cell texts
+      let curColX = startX;
+      for (let c = 0; c < numCols; c++) {
+        const w = colWidths[c] || boxWidth / numCols;
+        const lines = cellLines[c] || [];
+
+        if (isHeader) {
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(255, 255, 255);
+        } else {
+          pdf.setFont('helvetica', c === 0 ? 'bold' : 'normal');
+          pdf.setFontSize(8);
+          pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+        }
+
+        let cellY = y + 3.4;
+        for (const cellLine of lines) {
+          pdf.text(cellLine, curColX + 2.5, cellY);
+          cellY += 3.8;
+        }
+
+        curColX += w;
+      }
+
+      y += rowHeight;
+    }
+
+    y += 3;
+  };
+
+  const renderRichMarkdownInPdf = (markdown: string, startX: number, boxWidth: number) => {
+    const rawLines = markdown.split('\n');
+    let i = 0;
+
+    while (i < rawLines.length) {
+      const line = rawLines[i];
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        y += 1.8;
+        i++;
+        continue;
+      }
+
+      // 1. Code Block detection: ```lang ... ```
+      if (trimmed.startsWith('```')) {
+        const codeLines: string[] = [];
+        i++;
+        while (i < rawLines.length && !rawLines[i].trim().startsWith('```')) {
+          codeLines.push(rawLines[i]);
+          i++;
+        }
+        if (i < rawLines.length) i++; // skip closing ```
+        printCodeBlock(codeLines.join('\n'), startX, boxWidth);
+        continue;
+      }
+
+      // 2. Markdown Table detection: lines starting with | and ending with |
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        const tableLines: string[] = [];
+        while (
+          i < rawLines.length &&
+          rawLines[i].trim().startsWith('|') &&
+          rawLines[i].trim().endsWith('|')
+        ) {
+          tableLines.push(rawLines[i]);
+          i++;
+        }
+        printMarkdownTable(tableLines, startX, boxWidth);
+        continue;
+      }
+
+      // 3. Horizontal Rule: ---
+      if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
+        y += 1.5;
+        pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
+        pdf.setLineWidth(0.2);
+        pdf.line(startX, y, startX + boxWidth, y);
+        y += 2.5;
+        i++;
+        continue;
+      }
+
+      // 4. Subheadings: ### or ## or #
+      if (/^#{1,4}\s+/.test(trimmed)) {
+        checkPageBreak(12);
+        const subTitle = cleanForPdfVector(trimmed.replace(/^#{1,4}\s+/, '').replace(/\*\*/g, ''));
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.text(subTitle, startX, y + 2.5);
+        y += 5.5;
+        i++;
+        continue;
+      }
+
+      // 5. Blockquotes: > quote
+      if (trimmed.startsWith('>')) {
+        checkPageBreak(8);
+        const quoteText = cleanForPdfVector(trimmed.replace(/^>\s*/, '').replace(/\*\*/g, ''));
+        pdf.setFont('helvetica', 'italic');
+        pdf.setFontSize(8.5);
+        const qLines = pdf.splitTextToSize(quoteText, boxWidth - 8);
+        const qH = qLines.length * 4.2;
+
+        pdf.setDrawColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.setLineWidth(0.8);
+        pdf.line(startX + 1, y - 2, startX + 1, y + qH - 2);
+
+        printTextLines(qLines, startX + 4, 4.2, palette.textMuted);
+        y += 1;
+        i++;
+        continue;
+      }
+
+      // 6. Bullet lists: - item or * item
+      const bulletMatch = trimmed.match(/^[-*•]\s+(.+)$/);
+      if (bulletMatch) {
+        checkPageBreak(6);
+        const itemText = cleanForPdfVector(bulletMatch[1]).replace(/\*\*/g, '');
+        const bLines = pdf.splitTextToSize(itemText, boxWidth - 8);
+
+        pdf.setFillColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.circle(startX + 2, y + 1.8, 1, 'F');
+
+        printTextLines(bLines, startX + 6, 4.4, palette.text);
+        i++;
+        continue;
+      }
+
+      // 7. Regular paragraph text
+      const cleanLine = cleanForPdfVector(trimmed).replace(/\*\*/g, '');
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      const wrapped = pdf.splitTextToSize(cleanLine, boxWidth);
+      printTextLines(wrapped, startX, 4.5, palette.text);
+      i++;
+    }
+  };
+
   // =========================================================================
   // 1. COVER / HEADER SECTION
   // =========================================================================
@@ -558,7 +777,8 @@ export function generatePublicationPdf(
     if (options.includeSummary && notes.executiveSummary) {
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9.5);
-      const summaryLines = pdf.splitTextToSize(notes.executiveSummary, contentWidth - 12);
+      const summaryClean = cleanForPdfVector(notes.executiveSummary).replace(/\*\*/g, '');
+      const summaryLines = pdf.splitTextToSize(summaryClean, contentWidth - 12);
       const boxHeight = summaryLines.length * 4.8 + 14;
 
       if (boxHeight <= pageHeight - marginBottom - 10 - y) {
@@ -644,7 +864,8 @@ export function generatePublicationPdf(
       notes.keyTakeaways.forEach((item) => {
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(9.5);
-        const lines = pdf.splitTextToSize(item, contentWidth - 12);
+        const cleanItem = cleanForPdfVector(item).replace(/\*\*/g, '');
+        const lines = pdf.splitTextToSize(cleanItem, contentWidth - 12);
         const rowHeight = lines.length * 4.8 + 2;
 
         checkPageBreak(Math.min(rowHeight, 40));
@@ -662,7 +883,7 @@ export function generatePublicationPdf(
     }
 
     // =======================================================================
-    // 4. DETAILED BREAKDOWN / Q&A (Study & Cheatsheet modes)
+    // 4. DETAILED BREAKDOWN / TOPICS (Study & Cheatsheet modes)
     // =======================================================================
     if (
       activeMode !== 'brief' &&
@@ -682,96 +903,82 @@ export function generatePublicationPdf(
         marginX,
         y
       );
-      y += 6;
+      y += 7;
 
       notes.qaBreakdown.forEach((qa, idx) => {
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(10);
-        const qLines = pdf.splitTextToSize(`Q${idx + 1}: ${qa.question}`, contentWidth - 10);
-
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(9);
-        const aLines = pdf.splitTextToSize(qa.answer, contentWidth - 10);
-
-        const hasCode = qa.code && qa.code.trim().length > 0;
-        const qHeight = qLines.length * 5;
-        const aHeight = aLines.length * 4.6;
-        const cardPadding = 8;
-        const estimatedCodeH = hasCode ? 35 : 0;
-        const totalCardHeight = qHeight + aHeight + estimatedCodeH + cardPadding * 2;
-        const availableOnPage = pageHeight - marginBottom - 10 - y;
-
-        if (totalCardHeight <= availableOnPage) {
-          // Fits on current page as card
-          pdf.setFillColor(palette.cardBg[0], palette.cardBg[1], palette.cardBg[2]);
-          pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
-          pdf.setLineWidth(0.3);
-          pdf.roundedRect(marginX, y, contentWidth, totalCardHeight, 2.5, 2.5, 'FD');
-
-          let innerY = y + cardPadding;
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(10);
-          pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-          pdf.text(qLines, marginX + 5, innerY);
-          innerY += qHeight + 2.5;
-
-          pdf.setFont('helvetica', 'normal');
-          pdf.setFontSize(9);
-          pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-          pdf.text(aLines, marginX + 5, innerY);
-          innerY += aHeight + 3;
-
-          if (hasCode) {
-            printCodeBlock(qa.code!, marginX + 5, contentWidth - 10);
-          }
-          y += totalCardHeight + 5;
-        } else if (totalCardHeight <= pageHeight - marginBottom - 10 - marginTop) {
-          // Fits on fresh page as card
-          pdf.addPage('a4', 'portrait');
-          y = marginTop;
-          drawRunningHeader();
-
-          pdf.setFillColor(palette.cardBg[0], palette.cardBg[1], palette.cardBg[2]);
-          pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
-          pdf.setLineWidth(0.3);
-          pdf.roundedRect(marginX, y, contentWidth, totalCardHeight, 2.5, 2.5, 'FD');
-
-          let innerY = y + cardPadding;
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(10);
-          pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-          pdf.text(qLines, marginX + 5, innerY);
-          innerY += qHeight + 2.5;
-
-          pdf.setFont('helvetica', 'normal');
-          pdf.setFontSize(9);
-          pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-          pdf.text(aLines, marginX + 5, innerY);
-          innerY += aHeight + 3;
-
-          if (hasCode) {
-            printCodeBlock(qa.code!, marginX + 5, contentWidth - 10);
-          }
-          y += totalCardHeight + 5;
-        } else {
-          // Large card spanning multiple pages cleanly
-          checkPageBreak(25);
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(10);
-          pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-          printTextLines(qLines, marginX + 4, 5);
-          y += 2.5;
-
-          pdf.setFont('helvetica', 'normal');
-          pdf.setFontSize(9);
-          printTextLines(aLines, marginX + 4, 4.6, palette.text);
-          y += 3;
-
-          if (hasCode) {
-            printCodeBlock(qa.code!, marginX + 4, contentWidth - 8);
-          }
-          y += 5;
+        // Prevent orphaned header at the very bottom of a page
+        if (y > pageHeight - marginBottom - 26) {
+          checkPageBreak(30);
         }
+
+        // Topic Badge & Heading
+        const topicNum = `#${idx + 1}`;
+        const cleanQuestion = cleanForPdfVector(qa.question);
+
+        pdf.setFillColor(palette.badgeBg[0], palette.badgeBg[1], palette.badgeBg[2]);
+        pdf.roundedRect(marginX, y, 16, 5.2, 1.2, 1.2, 'F');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8);
+        pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.text(topicNum, marginX + 2.5, y + 3.8);
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(10.5);
+        pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+        const qLines = pdf.splitTextToSize(cleanQuestion, contentWidth - 20);
+        pdf.text(qLines, marginX + 19, y + 3.8);
+        y += Math.max(qLines.length * 5, 5.5) + 3.5;
+
+        // Render rich formatted answer (code, tables, quotes, headings, bullets)
+        renderRichMarkdownInPdf(qa.answer, marginX + 4, contentWidth - 8);
+
+        // Highlight bullets callout box (if any)
+        if (qa.keyPoints && qa.keyPoints.length > 0) {
+          checkPageBreak(18);
+          const kpItems = qa.keyPoints.map((kp) => cleanForPdfVector(kp).replace(/\*\*/g, ''));
+          const totalKpLines = kpItems.reduce(
+            (acc, kp) => acc + pdf.splitTextToSize(kp, contentWidth - 20).length,
+            0
+          );
+          const calloutH = totalKpLines * 4.4 + 10;
+
+          if (y + calloutH <= pageHeight - marginBottom - 10) {
+            pdf.setFillColor(palette.cardBg[0], palette.cardBg[1], palette.cardBg[2]);
+            pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(marginX + 4, y, contentWidth - 8, calloutH, 1.5, 1.5, 'FD');
+
+            let kpY = y;
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(8);
+            pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+            pdf.text('IMPORTANT HIGHLIGHTS', marginX + 8, kpY + 5.5);
+            kpY += 9;
+
+            for (const kp of kpItems) {
+              const kLines = pdf.splitTextToSize(kp, contentWidth - 22);
+              pdf.setFillColor(16, 185, 129);
+              pdf.circle(marginX + 8, kpY - 1, 1, 'F');
+              pdf.setFont('helvetica', 'normal');
+              pdf.setFontSize(8.5);
+              pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+              pdf.text(kLines, marginX + 12, kpY);
+              kpY += kLines.length * 4.4;
+            }
+            y = kpY + 3;
+          }
+        }
+
+        // Standalone code block if present and not already printed in answer
+        if (
+          qa.code &&
+          qa.code.trim().length > 0 &&
+          !qa.answer.includes(qa.code.trim().slice(0, 30))
+        ) {
+          printCodeBlock(qa.code, marginX + 4, contentWidth - 8);
+        }
+
+        y += 4.5; // Clean space between topics
       });
 
       y += 4;
@@ -798,7 +1005,8 @@ export function generatePublicationPdf(
       notes.actionItems.forEach((item) => {
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(9);
-        const lines = pdf.splitTextToSize(item, contentWidth - 12);
+        const cleanItem = cleanForPdfVector(item).replace(/\*\*/g, '');
+        const lines = pdf.splitTextToSize(cleanItem, contentWidth - 12);
         const rowHeight = lines.length * 4.8 + 2;
 
         checkPageBreak(Math.min(rowHeight, 40));
@@ -834,13 +1042,16 @@ export function generatePublicationPdf(
       y += 6;
 
       notes.reviewQuiz.forEach((q, idx) => {
+        const qClean = cleanForPdfVector(q.question).replace(/\*\*/g, '');
+        const aClean = cleanForPdfVector(q.answer).replace(/\*\*/g, '');
+
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(9.5);
-        const qLines = pdf.splitTextToSize(`${idx + 1}. ${q.question}`, contentWidth - 10);
+        const qLines = pdf.splitTextToSize(`${idx + 1}. ${qClean}`, contentWidth - 10);
 
         pdf.setFont('helvetica', 'italic');
         pdf.setFontSize(8.5);
-        const aLines = pdf.splitTextToSize(`Answer: ${q.answer}`, contentWidth - 14);
+        const aLines = pdf.splitTextToSize(`Answer: ${aClean}`, contentWidth - 14);
 
         const qH = qLines.length * 4.8;
         const aH = aLines.length * 4.2;
@@ -880,14 +1091,17 @@ export function generatePublicationPdf(
       y += 6;
 
       notes.glossary.forEach((t) => {
+        const termClean = cleanForPdfVector(t.term);
+        const defClean = cleanForPdfVector(t.definition).replace(/\*\*/g, '');
+
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(9);
         pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-        const prefix = `${t.term}: `;
+        const prefix = `${termClean}: `;
 
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(9);
-        const lines = pdf.splitTextToSize(`${prefix}${t.definition}`, contentWidth - 6);
+        const lines = pdf.splitTextToSize(`${prefix}${defClean}`, contentWidth - 6);
         const rowHeight = lines.length * 4.6 + 3;
 
         checkPageBreak(Math.min(rowHeight, 40));
