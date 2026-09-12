@@ -229,6 +229,12 @@ body {
     overflow: visible !important;
   }
 
+  section,
+  .space-y-4,
+  .space-y-6,
+  .space-y-8,
+  .space-y-12,
+  .grid,
   main,
   section#studio-preview,
   .animate-note-open,
@@ -241,6 +247,8 @@ body {
     padding: 0 !important;
     float: none !important;
     position: static !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
   .no-print,
@@ -268,6 +276,8 @@ body {
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
   .page-break-before {
@@ -276,8 +286,8 @@ body {
   }
 
   .avoid-break {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   a {

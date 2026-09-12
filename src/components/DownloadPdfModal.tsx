@@ -52,12 +52,22 @@ export function DownloadPdfModal({
     setError(null);
     setPdfType(type);
 
+    const isLargeDoc =
+      (notes.qaBreakdown && notes.qaBreakdown.length > 10) ||
+      (notes.rawTranscript && notes.rawTranscript.length > 15) ||
+      (notes.wordCount && notes.wordCount > 3000);
+
     try {
-      if (type === 'vector') {
-        setStatusMsg('Generating HD Publication-Grade PDF with constant margins...');
+      if (type === 'vector' || isLargeDoc) {
+        if (isLargeDoc && type === 'visual') {
+          setStatusMsg('Multi-page document detected (up to 250+ pages). Using Vector Engine to guarantee zero blank pages...');
+        } else {
+          setStatusMsg('Generating HD Publication-Grade PDF with constant margins...');
+        }
         await new Promise((r) => setTimeout(r, 60));
         const res = generatePublicationPdf(notes, options, rawFilename);
         setResult(res);
+        setPdfType('vector');
       } else {
         setStatusMsg('Rendering exact visual canvas capture...');
         const res = await exportToPdfDirect(

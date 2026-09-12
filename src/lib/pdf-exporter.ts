@@ -57,6 +57,10 @@ export function printDocument() {
               width: 100% !important;
               height: auto !important;
             }
+            section, .space-y-4, .space-y-6, .space-y-8, .space-y-12, .grid {
+              break-inside: auto !important;
+              page-break-inside: auto !important;
+            }
             #printable-document {
               display: block !important;
               position: static !important;
@@ -69,10 +73,12 @@ export function printDocument() {
               animation: none !important;
               transform: none !important;
               opacity: 1 !important;
+              break-inside: auto !important;
+              page-break-inside: auto !important;
             }
             .avoid-break {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
+              page-break-inside: avoid;
+              break-inside: avoid;
             }
             * {
               -webkit-print-color-adjust: exact !important;
@@ -322,15 +328,8 @@ export function generatePublicationPdf(
   const marginTop = 20;
   const marginBottom = 18;
   const contentWidth = pageWidth - marginX * 2; // 174mm
+  const activeMode = options.mode || 'study';
   let y = marginTop;
-
-  const checkPageBreak = (neededHeight: number) => {
-    if (y + neededHeight > pageHeight - marginBottom - 10) {
-      pdf.addPage('a4', 'portrait');
-      y = marginTop;
-      drawRunningHeader();
-    }
-  };
 
   const drawRunningHeader = () => {
     pdf.setFont('helvetica', 'normal');
@@ -344,6 +343,67 @@ export function generatePublicationPdf(
     pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
     pdf.setLineWidth(0.3);
     pdf.line(marginX, 14, pageWidth - marginX, 14);
+  };
+
+  const checkPageBreak = (neededHeight: number) => {
+    const maxAvailable = pageHeight - marginBottom - 10 - marginTop;
+    const clampedNeeded = Math.min(neededHeight, maxAvailable);
+    if (y + clampedNeeded > pageHeight - marginBottom - 10) {
+      pdf.addPage('a4', 'portrait');
+      y = marginTop;
+      drawRunningHeader();
+    }
+  };
+
+  const printTextLines = (
+    lines: string[],
+    x: number,
+    lineHeight: number,
+    textColor?: [number, number, number]
+  ) => {
+    if (textColor) {
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+    }
+    for (const line of lines) {
+      if (y + lineHeight > pageHeight - marginBottom - 10) {
+        pdf.addPage('a4', 'portrait');
+        y = marginTop;
+        drawRunningHeader();
+        if (textColor) {
+          pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        }
+      }
+      pdf.text(line, x, y);
+      y += lineHeight;
+    }
+  };
+
+  const printCodeBlock = (code: string, marginStartX: number, boxWidth: number) => {
+    pdf.setFont('courier', 'normal');
+    pdf.setFontSize(8);
+    const codeLines = pdf.splitTextToSize(code, boxWidth - 8);
+    const lineHeight = 3.8;
+
+    if (y + 12 > pageHeight - marginBottom - 10) {
+      pdf.addPage('a4', 'portrait');
+      y = marginTop;
+      drawRunningHeader();
+    }
+
+    for (let i = 0; i < codeLines.length; i++) {
+      if (y + lineHeight > pageHeight - marginBottom - 10) {
+        pdf.addPage('a4', 'portrait');
+        y = marginTop;
+        drawRunningHeader();
+      }
+      pdf.setFillColor(243, 246, 250);
+      pdf.rect(marginStartX, y - 2.8, boxWidth, lineHeight, 'F');
+
+      pdf.setTextColor(30, 41, 59);
+      pdf.text(codeLines[i], marginStartX + 4, y);
+      y += lineHeight;
+    }
+    y += 3;
   };
 
   // =========================================================================
@@ -387,9 +447,9 @@ export function generatePublicationPdf(
     pdf.setFontSize(9);
     pdf.setTextColor(palette.textMuted[0], palette.textMuted[1], palette.textMuted[2]);
     const author = options.authorName || 'AI Synthesizer';
-    const modeStr = (options.mode || 'study').toUpperCase();
+    const modeStr = activeMode.toUpperCase();
     pdf.text(
-      `Author: ${author}   |   ${notes.readingTimeMinutes} min read   |   Format: ${modeStr} MODE`,
+      `Author: ${author}   |   ${notes.readingTimeMinutes} min read (${notes.wordCount} words)   |   Format: ${modeStr} MODE`,
       marginX,
       y
     );
@@ -402,259 +462,389 @@ export function generatePublicationPdf(
   }
 
   // =========================================================================
-  // 2. EXECUTIVE SUMMARY (Callout Card with Left Accent Border)
+  // MODE A: TRANSCRIPT MODE (Full Conversation Stream)
   // =========================================================================
-  if (options.includeSummary && notes.executiveSummary) {
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9.5);
-    const summaryLines = pdf.splitTextToSize(notes.executiveSummary, contentWidth - 12);
-    const boxHeight = summaryLines.length * 5 + 14;
-
-    checkPageBreak(boxHeight + 10);
-
-    // Background Card
-    pdf.setFillColor(palette.cardBg[0], palette.cardBg[1], palette.cardBg[2]);
-    pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
-    pdf.setLineWidth(0.3);
-    pdf.roundedRect(marginX, y, contentWidth, boxHeight, 2.5, 2.5, 'FD');
-
-    // Left accent bar
-    pdf.setFillColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-    pdf.rect(marginX, y, 2.2, boxHeight, 'F');
-
-    // Title
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(11);
-    pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-    pdf.text('Executive Summary', marginX + 6, y + 6.5);
-
-    // Paragraph
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-    pdf.text(summaryLines, marginX + 6, y + 12);
-
-    y += boxHeight + 7;
-  }
-
-  // =========================================================================
-  // 3. KEY TAKEAWAYS
-  // =========================================================================
-  if (options.includeTakeaways && notes.keyTakeaways && notes.keyTakeaways.length > 0) {
+  if (activeMode === 'transcript' && notes.rawTranscript && notes.rawTranscript.length > 0) {
     checkPageBreak(25);
-
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(13);
     pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-    pdf.text('Key Takeaways & Core Concepts', marginX, y);
-    y += 6;
+    pdf.text('Complete Conversation Transcript', marginX, y);
+    y += 7;
 
-    notes.keyTakeaways.forEach((item, i) => {
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9.5);
-      const lines = pdf.splitTextToSize(item, contentWidth - 12);
-      const rowHeight = lines.length * 5 + 3;
+    notes.rawTranscript.forEach((msg, idx) => {
+      const isUser = msg.role === 'user';
+      const roleLabel = isUser
+        ? `TURN #${idx + 1} • USER QUESTION`
+        : `TURN #${idx + 1} • ${notes.provider ? notes.provider.toUpperCase() : 'AI'} RESPONSE`;
 
-      checkPageBreak(rowHeight);
+      checkPageBreak(18);
 
-      // Bullet dot
-      pdf.setFillColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-      pdf.circle(marginX + 3, y + 2, 1.3, 'F');
-
-      // Text
-      pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-      pdf.text(lines, marginX + 8, y + 3.2);
-
-      y += rowHeight;
-    });
-
-    y += 4;
-  }
-
-  // =========================================================================
-  // 4. DETAILED BREAKDOWN / Q&A
-  // =========================================================================
-  if (options.includeQA && notes.qaBreakdown && notes.qaBreakdown.length > 0) {
-    checkPageBreak(25);
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(13);
-    pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-    pdf.text('Detailed Breakdown & Analysis', marginX, y);
-    y += 6;
-
-    notes.qaBreakdown.forEach((qa, idx) => {
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10);
-      const qLines = pdf.splitTextToSize(`Q${idx + 1}: ${qa.question}`, contentWidth - 10);
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9);
-      const aLines = pdf.splitTextToSize(qa.answer, contentWidth - 10);
-
-      const hasCode = qa.code && qa.code.trim().length > 0;
-      let codeLines: string[] = [];
-      if (hasCode) {
-        pdf.setFont('courier', 'normal');
-        pdf.setFontSize(8);
-        codeLines = pdf.splitTextToSize(qa.code!, contentWidth - 14);
-      }
-
-      const cardPadding = 8;
-      const qHeight = qLines.length * 5;
-      const aHeight = aLines.length * 4.6;
-      const codeBoxHeight = hasCode ? codeLines.length * 3.8 + 8 : 0;
-      const totalCardHeight = qHeight + aHeight + codeBoxHeight + cardPadding * 2 + 4;
-
-      checkPageBreak(Math.min(totalCardHeight, 80));
-
-      // Draw Card Background
-      pdf.setFillColor(palette.cardBg[0], palette.cardBg[1], palette.cardBg[2]);
-      pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
-      pdf.setLineWidth(0.3);
-      pdf.roundedRect(marginX, y, contentWidth, totalCardHeight, 2.5, 2.5, 'FD');
-
-      let innerY = y + cardPadding;
-
-      // Question
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10);
-      pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-      pdf.text(qLines, marginX + 5, innerY);
-      innerY += qHeight + 2.5;
-
-      // Answer
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9);
-      pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-      pdf.text(aLines, marginX + 5, innerY);
-      innerY += aHeight + 3;
-
-      // Code Box
-      if (hasCode) {
+      // Turn badge
+      if (isUser) {
+        pdf.setFillColor(palette.badgeBg[0], palette.badgeBg[1], palette.badgeBg[2]);
+        pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+      } else {
         pdf.setFillColor(241, 245, 249);
-        pdf.setDrawColor(203, 213, 225);
-        pdf.roundedRect(marginX + 5, innerY, contentWidth - 10, codeBoxHeight, 1.5, 1.5, 'FD');
-
-        pdf.setFont('courier', 'normal');
-        pdf.setFontSize(8);
-        pdf.setTextColor(30, 41, 59);
-        pdf.text(codeLines, marginX + 8, innerY + 5);
+        pdf.setTextColor(71, 85, 105);
       }
+      pdf.roundedRect(marginX, y, 68, 5.5, 1.5, 1.5, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7.5);
+      pdf.text(roleLabel, marginX + 3, y + 3.8);
+      y += 7.5;
 
-      y += totalCardHeight + 5;
-    });
-
-    y += 4;
-  }
-
-  // =========================================================================
-  // 5. ACTION ITEMS / CHECKLIST
-  // =========================================================================
-  if (options.includeActionItems && notes.actionItems && notes.actionItems.length > 0) {
-    checkPageBreak(25);
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(13);
-    pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-    pdf.text('Action Items & Implementation Checklist', marginX, y);
-    y += 6;
-
-    notes.actionItems.forEach((item) => {
+      // Message Content with line-by-line pagination
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
-      const lines = pdf.splitTextToSize(item, contentWidth - 12);
-      const rowHeight = lines.length * 4.8 + 2;
-
-      checkPageBreak(rowHeight);
-
-      // Checkbox square
-      pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
-      pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(marginX + 2, y + 0.5, 3.5, 3.5, 0.6, 0.6, 'FD');
-
-      // Checkbox text
-      pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-      pdf.text(lines, marginX + 8, y + 3.2);
-
-      y += rowHeight;
+      const contentLines = pdf.splitTextToSize(msg.content, contentWidth - 6);
+      printTextLines(contentLines, marginX + 3, 4.6, palette.text);
+      y += 5;
     });
-
-    y += 4;
-  }
-
-  // =========================================================================
-  // 6. REVIEW QUIZ
-  // =========================================================================
-  if (options.includeQuiz && notes.reviewQuiz && notes.reviewQuiz.length > 0) {
-    checkPageBreak(25);
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(13);
-    pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-    pdf.text('Self-Testing Review Quiz', marginX, y);
-    y += 6;
-
-    notes.reviewQuiz.forEach((q, idx) => {
-      pdf.setFont('helvetica', 'bold');
+  } else {
+    // =======================================================================
+    // 2. EXECUTIVE SUMMARY (Callout Card with Left Accent Border)
+    // =======================================================================
+    if (options.includeSummary && notes.executiveSummary) {
+      pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9.5);
-      const qLines = pdf.splitTextToSize(`${idx + 1}. ${q.question}`, contentWidth - 10);
+      const summaryLines = pdf.splitTextToSize(notes.executiveSummary, contentWidth - 12);
+      const boxHeight = summaryLines.length * 4.8 + 14;
 
-      pdf.setFont('helvetica', 'italic');
-      pdf.setFontSize(8.5);
-      const aLines = pdf.splitTextToSize(`Answer: ${q.answer}`, contentWidth - 14);
+      if (boxHeight <= pageHeight - marginBottom - 10 - y) {
+        // Fits on current page
+        pdf.setFillColor(palette.cardBg[0], palette.cardBg[1], palette.cardBg[2]);
+        pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(marginX, y, contentWidth, boxHeight, 2.5, 2.5, 'FD');
 
-      const qH = qLines.length * 4.8;
-      const aH = aLines.length * 4.2;
-      const totalH = qH + aH + 7;
+        pdf.setFillColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.rect(marginX, y, 2.2, boxHeight, 'F');
 
-      checkPageBreak(totalH);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.text('Executive Summary', marginX + 6, y + 6.5);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+        pdf.text(summaryLines, marginX + 6, y + 12);
+
+        y += boxHeight + 7;
+      } else if (boxHeight <= pageHeight - marginBottom - 10 - marginTop) {
+        // Fits on fresh page
+        pdf.addPage('a4', 'portrait');
+        y = marginTop;
+        drawRunningHeader();
+
+        pdf.setFillColor(palette.cardBg[0], palette.cardBg[1], palette.cardBg[2]);
+        pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(marginX, y, contentWidth, boxHeight, 2.5, 2.5, 'FD');
+
+        pdf.setFillColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.rect(marginX, y, 2.2, boxHeight, 'F');
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.text('Executive Summary', marginX + 6, y + 6.5);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+        pdf.text(summaryLines, marginX + 6, y + 12);
+
+        y += boxHeight + 7;
+      } else {
+        // Large multi-page summary
+        checkPageBreak(22);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.text('Executive Summary', marginX, y);
+        y += 6;
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        printTextLines(summaryLines, marginX, 4.6, palette.text);
+        y += 6;
+      }
+    }
+
+    // =======================================================================
+    // 3. KEY TAKEAWAYS
+    // =======================================================================
+    if (options.includeTakeaways && notes.keyTakeaways && notes.keyTakeaways.length > 0) {
+      checkPageBreak(25);
 
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(9.5);
+      pdf.setFontSize(13);
       pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-      pdf.text(qLines, marginX + 3, y + 3.5);
+      pdf.text(
+        activeMode === 'brief'
+          ? 'Primary Decisions & Findings'
+          : 'Key Takeaways & Core Concepts',
+        marginX,
+        y
+      );
+      y += 6;
 
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(8.5);
-      pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-      pdf.text(aLines, marginX + 7, y + qH + 5);
+      notes.keyTakeaways.forEach((item) => {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9.5);
+        const lines = pdf.splitTextToSize(item, contentWidth - 12);
+        const rowHeight = lines.length * 4.8 + 2;
 
-      y += totalH;
-    });
+        checkPageBreak(Math.min(rowHeight, 40));
 
-    y += 4;
-  }
+        // Bullet dot
+        pdf.setFillColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        pdf.circle(marginX + 3, y + 2, 1.3, 'F');
 
-  // =========================================================================
-  // 7. GLOSSARY
-  // =========================================================================
-  if (options.includeGlossary && notes.glossary && notes.glossary.length > 0) {
-    checkPageBreak(25);
+        // Text
+        printTextLines(lines, marginX + 8, 4.8, palette.text);
+        y += 2;
+      });
 
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(13);
-    pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-    pdf.text('Glossary of Key Terminology', marginX, y);
-    y += 6;
+      y += 4;
+    }
 
-    notes.glossary.forEach((t) => {
+    // =======================================================================
+    // 4. DETAILED BREAKDOWN / Q&A (Study & Cheatsheet modes)
+    // =======================================================================
+    if (
+      activeMode !== 'brief' &&
+      options.includeQA &&
+      notes.qaBreakdown &&
+      notes.qaBreakdown.length > 0
+    ) {
+      checkPageBreak(25);
+
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(9);
-      pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
-      const prefix = `${t.term}: `;
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9);
+      pdf.setFontSize(13);
       pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
-      const lines = pdf.splitTextToSize(`${prefix}${t.definition}`, contentWidth - 6);
-      const rowHeight = lines.length * 4.6 + 3;
+      pdf.text(
+        activeMode === 'cheatsheet'
+          ? 'Pattern & Reference Cards'
+          : 'Detailed Breakdown & Analysis',
+        marginX,
+        y
+      );
+      y += 6;
 
-      checkPageBreak(rowHeight);
+      notes.qaBreakdown.forEach((qa, idx) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(10);
+        const qLines = pdf.splitTextToSize(`Q${idx + 1}: ${qa.question}`, contentWidth - 10);
 
-      pdf.text(lines, marginX + 3, y + 3);
-      y += rowHeight;
-    });
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        const aLines = pdf.splitTextToSize(qa.answer, contentWidth - 10);
+
+        const hasCode = qa.code && qa.code.trim().length > 0;
+        const qHeight = qLines.length * 5;
+        const aHeight = aLines.length * 4.6;
+        const cardPadding = 8;
+        const estimatedCodeH = hasCode ? 35 : 0;
+        const totalCardHeight = qHeight + aHeight + estimatedCodeH + cardPadding * 2;
+        const availableOnPage = pageHeight - marginBottom - 10 - y;
+
+        if (totalCardHeight <= availableOnPage) {
+          // Fits on current page as card
+          pdf.setFillColor(palette.cardBg[0], palette.cardBg[1], palette.cardBg[2]);
+          pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
+          pdf.setLineWidth(0.3);
+          pdf.roundedRect(marginX, y, contentWidth, totalCardHeight, 2.5, 2.5, 'FD');
+
+          let innerY = y + cardPadding;
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(10);
+          pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+          pdf.text(qLines, marginX + 5, innerY);
+          innerY += qHeight + 2.5;
+
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(9);
+          pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+          pdf.text(aLines, marginX + 5, innerY);
+          innerY += aHeight + 3;
+
+          if (hasCode) {
+            printCodeBlock(qa.code!, marginX + 5, contentWidth - 10);
+          }
+          y += totalCardHeight + 5;
+        } else if (totalCardHeight <= pageHeight - marginBottom - 10 - marginTop) {
+          // Fits on fresh page as card
+          pdf.addPage('a4', 'portrait');
+          y = marginTop;
+          drawRunningHeader();
+
+          pdf.setFillColor(palette.cardBg[0], palette.cardBg[1], palette.cardBg[2]);
+          pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
+          pdf.setLineWidth(0.3);
+          pdf.roundedRect(marginX, y, contentWidth, totalCardHeight, 2.5, 2.5, 'FD');
+
+          let innerY = y + cardPadding;
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(10);
+          pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+          pdf.text(qLines, marginX + 5, innerY);
+          innerY += qHeight + 2.5;
+
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(9);
+          pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+          pdf.text(aLines, marginX + 5, innerY);
+          innerY += aHeight + 3;
+
+          if (hasCode) {
+            printCodeBlock(qa.code!, marginX + 5, contentWidth - 10);
+          }
+          y += totalCardHeight + 5;
+        } else {
+          // Large card spanning multiple pages cleanly
+          checkPageBreak(25);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(10);
+          pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+          printTextLines(qLines, marginX + 4, 5);
+          y += 2.5;
+
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(9);
+          printTextLines(aLines, marginX + 4, 4.6, palette.text);
+          y += 3;
+
+          if (hasCode) {
+            printCodeBlock(qa.code!, marginX + 4, contentWidth - 8);
+          }
+          y += 5;
+        }
+      });
+
+      y += 4;
+    }
+
+    // =======================================================================
+    // 5. ACTION ITEMS / CHECKLIST (Study & Brief modes)
+    // =======================================================================
+    if (options.includeActionItems && notes.actionItems && notes.actionItems.length > 0) {
+      checkPageBreak(25);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(13);
+      pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+      pdf.text(
+        activeMode === 'brief'
+          ? 'Next Steps & Action Matrix'
+          : 'Action Items & Implementation Checklist',
+        marginX,
+        y
+      );
+      y += 6;
+
+      notes.actionItems.forEach((item) => {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        const lines = pdf.splitTextToSize(item, contentWidth - 12);
+        const rowHeight = lines.length * 4.8 + 2;
+
+        checkPageBreak(Math.min(rowHeight, 40));
+
+        // Checkbox square
+        pdf.setDrawColor(palette.cardBorder[0], palette.cardBorder[1], palette.cardBorder[2]);
+        pdf.setFillColor(255, 255, 255);
+        pdf.roundedRect(marginX + 2, y + 0.5, 3.5, 3.5, 0.6, 0.6, 'FD');
+
+        // Checkbox text
+        printTextLines(lines, marginX + 8, 4.8, palette.text);
+        y += 2;
+      });
+
+      y += 4;
+    }
+
+    // =======================================================================
+    // 6. REVIEW QUIZ (Study mode)
+    // =======================================================================
+    if (
+      activeMode === 'study' &&
+      options.includeQuiz &&
+      notes.reviewQuiz &&
+      notes.reviewQuiz.length > 0
+    ) {
+      checkPageBreak(25);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(13);
+      pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+      pdf.text('Self-Testing Review Quiz', marginX, y);
+      y += 6;
+
+      notes.reviewQuiz.forEach((q, idx) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9.5);
+        const qLines = pdf.splitTextToSize(`${idx + 1}. ${q.question}`, contentWidth - 10);
+
+        pdf.setFont('helvetica', 'italic');
+        pdf.setFontSize(8.5);
+        const aLines = pdf.splitTextToSize(`Answer: ${q.answer}`, contentWidth - 14);
+
+        const qH = qLines.length * 4.8;
+        const aH = aLines.length * 4.2;
+        const totalH = qH + aH + 7;
+
+        checkPageBreak(Math.min(totalH, 50));
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9.5);
+        printTextLines(qLines, marginX + 3, 4.8, palette.text);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8.5);
+        printTextLines(aLines, marginX + 7, 4.2, palette.primary);
+
+        y += 3;
+      });
+
+      y += 4;
+    }
+
+    // =======================================================================
+    // 7. GLOSSARY (Study & Cheatsheet modes)
+    // =======================================================================
+    if (
+      activeMode !== 'brief' &&
+      options.includeGlossary &&
+      notes.glossary &&
+      notes.glossary.length > 0
+    ) {
+      checkPageBreak(25);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(13);
+      pdf.setTextColor(palette.text[0], palette.text[1], palette.text[2]);
+      pdf.text('Glossary of Key Terminology', marginX, y);
+      y += 6;
+
+      notes.glossary.forEach((t) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(palette.primary[0], palette.primary[1], palette.primary[2]);
+        const prefix = `${t.term}: `;
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        const lines = pdf.splitTextToSize(`${prefix}${t.definition}`, contentWidth - 6);
+        const rowHeight = lines.length * 4.6 + 3;
+
+        checkPageBreak(Math.min(rowHeight, 40));
+        printTextLines(lines, marginX + 3, 4.6, palette.text);
+        y += 2;
+      });
+    }
   }
 
   // =========================================================================
@@ -707,17 +897,26 @@ export async function exportToPdfDirect(
     throw new Error(`Element #${elementId} not found`);
   }
 
+  const docHeight = element.scrollHeight || element.offsetHeight || 1000;
+
+  // Safe Guard: If document is massive (>12,000px, which is >10 pages),
+  // HTML5 single canvas allocation will fail or produce blank pages in Chromium.
+  if (docHeight > 14000) {
+    throw new Error(
+      'Document exceeds single canvas limit (>10 pages). For large multi-page documents (up to 250+ pages), use HD Publication Vector PDF for 100% complete pages with zero blank pages.'
+    );
+  }
+
   onProgress?.('Preparing document for capture...');
 
   const isMobile =
     typeof window !== 'undefined' &&
     (window.innerWidth < 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent));
   const maxCanvasDimension = isMobile ? 4096 : 8192;
-  const docHeight = element.scrollHeight || element.offsetHeight || 1000;
 
   let scale = isMobile ? 1.5 : 2;
   if (docHeight * scale > maxCanvasDimension) {
-    scale = Math.max(1, maxCanvasDimension / docHeight);
+    scale = Math.max(0.8, maxCanvasDimension / docHeight);
   }
 
   onProgress?.('Rendering exact visual pages...');

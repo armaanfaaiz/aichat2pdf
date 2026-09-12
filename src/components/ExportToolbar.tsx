@@ -11,7 +11,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { GeneratedNotes, CustomizationOptions } from '@/types';
-import { printDocument, exportToPdfDirect } from '@/lib/pdf-exporter';
+import { printDocument, generatePublicationPdf } from '@/lib/pdf-exporter';
 import { convertNotesToMarkdown, downloadFile } from '@/lib/markdown-exporter';
 import confetti from 'canvas-confetti';
 
@@ -55,7 +55,7 @@ export function ExportToolbar({ notes, options, onOpenDownloadModal }: ExportToo
         .toLowerCase()
         .replace(/[^a-z0-9]/gi, '_');
 
-      await exportToPdfDirect('printable-document', filename, (msg) => setStatusMsg(msg));
+      generatePublicationPdf(notes, options, filename);
 
       triggerConfetti();
       setStatusMsg('Downloaded!');
